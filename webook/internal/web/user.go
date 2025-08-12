@@ -3,9 +3,12 @@ package web
 import (
 	"Book_Exp/webook/internal/domain"
 	"Book_Exp/webook/internal/service"
+	"fmt"
 	regexp "github.com/dlclark/regexp2"
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
+	jwt "github.com/golang-jwt/jwt/v5"
+
 	"net/http"
 )
 
@@ -33,7 +36,7 @@ func NewUserHandler(svc *service.UserService) *UserHandler {
 func (u *UserHandler) RegisterRoutes(server *gin.Engine) { // 注册路由
 	//分组注册路由
 	ug := server.Group("/users")
-	ug.POST("/login", u.Login)
+	ug.POST("/login", u.LoginJWT)
 	ug.POST("/signup", u.Signup)
 	ug.POST("/edit", u.Edit)
 	ug.GET("/profile", u.Profile)
@@ -93,7 +96,45 @@ func (c *UserHandler) Signup(ctx *gin.Context) {
 
 } //
 
-// 登录
+// 登录JWT
+func (u *UserHandler) LoginJWT(ctx *gin.Context) {
+	type LoginReq struct {
+		Email    string `json:"email"`
+		Password string `json:"password"`
+	}
+	var req LoginReq
+
+	//参数绑定
+	if err := ctx.Bind(&req); err != nil { // 绑定参数
+		return // 返回错误
+	}
+	user, err := u.svc.Login(ctx, req.Email, req.Password) // 调用service
+	if err == service.ErrInvalidUserOrPassword {
+		ctx.String(http.StatusOK, "用户名或者密码不对")
+		return
+
+	}
+	if err != nil {
+		ctx.String(http.StatusOK, "系统错误")
+		return
+	}
+	claims := UserClaims{
+		Uid: user.Id,
+	}
+	//使用JWT设置登录状态  比如要求userid放入token中
+	token := jwt.NewWithClaims(jwt.SigningMethodHS512, claims) // 创建一个token 使用jwt
+	tokenStr, err := token.SignedString([]byte("95osj3fUD7fo0mlYdDbncXz4VD2igvf0"))
+	if err != nil {
+		ctx.String(http.StatusInternalServerError, "系统错误")
+		return
+	}
+	ctx.Header("x-jwt-token", tokenStr)
+
+	fmt.Println(user)
+	ctx.String(http.StatusOK, "登录成功")
+	return
+
+}
 func (u *UserHandler) Login(ctx *gin.Context) {
 	type LoginReq struct {
 		Email    string `json:"email"`
@@ -126,13 +167,14 @@ func (u *UserHandler) Login(ctx *gin.Context) {
 		MaxAge: 30 * 60, // 表示30分钟
 	})
 	sess.Save() // 保存session
+
 	ctx.String(http.StatusOK, "登录成功")
 	return
 
 }
 
 func (u *UserHandler) logOut(ctx *gin.Context) {
-	sess := sessions.Default(ctx) // 拿到session
+	sess := sessions.Default(ctx)  // 拿到session
 	sess.Options(sessions.Options{ // 设置session的过期时间
 		//Secure:   true,      // https  开发环境不要用
 		//HttpOnly: true,      // js无法访问
@@ -150,4 +192,20 @@ func (u *UserHandler) Edit(ctx *gin.Context) {
 func (u *UserHandler) Profile(ctx *gin.Context) {
 	ctx.String(http.StatusOK, "这是你的profile")
 
+}
+
+func (u *UserHandler) ProfileJwt(ctx *gin.Context) {
+	c, _ := ctx.Get("claims")
+	claims, ok := c.(UserClaims)
+	if !ok {
+		ctx.String(http.StatusOK, "系统错误")
+		return
+	}
+	println(claims.Uid)
+}
+
+type UserClaims struct { // jwt
+	jwt.RegisteredClaims
+	//声明你自己要放进去token里面的数据
+	Uid int64
 }

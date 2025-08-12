@@ -24,6 +24,8 @@ func initWebServer() *gin.Engine { // 初始化web服务
 		//AllowOrigins: []string{"http://localhost:3000"},
 		AllowMethods: []string{"PUT", "PATCH", "POST", "GET"},
 		AllowHeaders: []string{"Content-Type", "authorization"},
+		//暴露给前端的header
+		ExposeHeaders: []string{"x-jwt-token"},
 		//是否允许你带cookie之类的东西
 		AllowCredentials: true,
 		AllowOriginFunc: func(origin string) bool {
@@ -49,8 +51,15 @@ func initWebServer() *gin.Engine { // 初始化web服务
 		panic(err)
 	}
 	//mystore := &sqlx_store.Store{}  // 创建sqlx store
-	server.Use(sessions.Sessions("mysession", store))          //设置session中间件
-	server.Use(middleware.NewLoginMiddlewareBuilder().Build()) //登录中间件
+	server.Use(sessions.Sessions("mysession", store)) //设置session中间件
+	//server.Use(middleware.NewLoginMiddlewareBuilder().Build()) //登录中间件
+
+	//jwt中间件
+	server.Use(middleware.NewLoginJwtMiddlewareBuilder().
+		IgnorePaths("/users/signup").
+		IgnorePaths("/users/login").
+		Build())
+	server.Use()
 	return server
 }
 
