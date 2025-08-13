@@ -1,0 +1,25 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: webook-live-mysql
+  labels:
+    app: webook-live-mysql
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: webook-live-mysql
+  template:
+    metadata:
+      name: webook-live-mysql
+      labels:
+        app: webook-live-mysql
+    spec:
+      containers:
+        - name: webook-live-mysql
+          image: mysql:8.0
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 80
+              protocol: TCP
+      restartPolicy: Always
