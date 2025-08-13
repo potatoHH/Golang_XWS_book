@@ -8,6 +8,7 @@ import (
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
 	jwt "github.com/golang-jwt/jwt/v5"
+	"time"
 
 	"net/http"
 )
@@ -119,6 +120,10 @@ func (u *UserHandler) LoginJWT(ctx *gin.Context) {
 		return
 	}
 	claims := UserClaims{
+		//设置过期时间
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour * 24)), //设置过期时间
+		},
 		Uid: user.Id,
 	}
 	//使用JWT设置登录状态  比如要求userid放入token中
@@ -128,10 +133,12 @@ func (u *UserHandler) LoginJWT(ctx *gin.Context) {
 		ctx.String(http.StatusInternalServerError, "系统错误")
 		return
 	}
+
 	ctx.Header("x-jwt-token", tokenStr)
 
 	fmt.Println(user)
 	ctx.String(http.StatusOK, "登录成功")
+
 	return
 
 }
@@ -205,7 +212,7 @@ func (u *UserHandler) ProfileJwt(ctx *gin.Context) {
 }
 
 type UserClaims struct { // jwt
-	jwt.RegisteredClaims
+	jwt.RegisteredClaims // 继承
 	//声明你自己要放进去token里面的数据
 	Uid int64
 }
