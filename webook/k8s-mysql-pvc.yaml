@@ -1,0 +1,22 @@
+apiVersion: v1
+# 持久卷  我的mysql有哪些
+volumes:
+kind: persistentVolumeClaim
+metadata:
+  #这个是指mysql 要用的东西
+  #但是我的k8有什么
+
+  name: webook-mysql-live-claim
+
+spec:
+  storageClassName: suibian
+  #访问的模式,这里主要是控制能不能被多个pod读写
+  accessModes:
+  #被第一个读写的pod写入
+    - ReadWriteOnce
+  #究竟需要一些什么资源
+  resources:
+    requests:
+      storage: 1Gi #1G
+
+  
