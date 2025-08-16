@@ -21,9 +21,7 @@ func NewUserDao(db *gorm.DB) *UserDao {
 	return &UserDao{
 		db: db,
 	}
-
 }
-
 func (dao *UserDao) Insert(ctx context.Context, u User) error {
 	//存毫秒数
 	now := time.Now().UnixMilli()
@@ -37,13 +35,17 @@ func (dao *UserDao) Insert(ctx context.Context, u User) error {
 		}
 	}
 	return err
-
 }
 
 // 登录
 func (dao *UserDao) FindByEmail(ctx context.Context, email string) (User, error) {
 	var u User
 	err := dao.db.WithContext(ctx).Where("email=?", email).First(&u).Error //查询
+	return u, err
+}
+func (dao *UserDao) FindById(ctx context.Context, id int64) (User, error) {
+	var u User
+	err := dao.db.WithContext(ctx).Where("id=?", id).First(&u).Error //查询
 	return u, err
 }
 

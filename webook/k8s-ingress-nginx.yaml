@@ -1,0 +1,18 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: webook-live-ingress
+spec:
+  ingressClassName: nginx
+  rules:
+#     host 是live.webook.com 的时候,明中我这条
+    - host: live.webook.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: webook
+                port:
+                  number: 80

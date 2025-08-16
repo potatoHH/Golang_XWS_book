@@ -37,8 +37,8 @@ func NewUserHandler(svc *service.UserService) *UserHandler {
 func (u *UserHandler) RegisterRoutes(server *gin.Engine) { // 注册路由
 	//分组注册路由
 	ug := server.Group("/users")
-	ug.POST("/login", u.LoginJWT)
 	ug.POST("/signup", u.Signup)
+	ug.POST("/login", u.LoginJWT)
 	ug.POST("/edit", u.Edit)
 	ug.GET("/profile", u.Profile)
 
@@ -124,7 +124,8 @@ func (u *UserHandler) LoginJWT(ctx *gin.Context) {
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour * 24)), //设置过期时间
 		},
-		Uid: user.Id,
+		Uid:       user.Id,
+		UserAgent: ctx.Request.UserAgent(), // 设置用户代理
 	}
 	//使用JWT设置登录状态  比如要求userid放入token中
 	token := jwt.NewWithClaims(jwt.SigningMethodHS512, claims) // 创建一个token 使用jwt
@@ -214,5 +215,6 @@ func (u *UserHandler) ProfileJwt(ctx *gin.Context) {
 type UserClaims struct { // jwt
 	jwt.RegisteredClaims // 继承
 	//声明你自己要放进去token里面的数据
-	Uid int64
+	Uid       int64
+	UserAgent string
 }

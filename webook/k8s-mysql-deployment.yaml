@@ -18,8 +18,37 @@ spec:
       containers:
         - name: webook-live-mysql
           image: mysql:8.0
+          env:
+            - name: MYSQL_ROOT_PASSWORD
+              value: root
           imagePullPolicy: IfNotPresent
+          #配置持久化卷
+          volumeMounts:
+            - #这里要对应mysql数据存储的位置
+             - mountPath: /var/lib/mysql
+               #pod中用哪个卷
+               name: mysql-storage
+#        - name: webook-live-hadoop
+#          image: mysql:8.0
+#          env:
+#            - name: MYSQL_ROOT_PASSWORD
+#              value: root
+#          imagePullPolicy: IfNotPresent
+#          #配置持久化卷
+#          volumeMounts:
+#            - mountPath: /mysql
+#              name: mysql-storage
+
+
           ports:
-            - containerPort: 80
-              protocol: TCP
+            - containerPort: 3306
       restartPolicy: Always
+
+      #pod 级别
+      volumes:
+          - name: mysql-storage
+            persistentVolumeClaim:
+                claimName: webook-mysql-live-claim
+          - name: hadoop-storage
+            persistentVolumeClaim:
+              claimName: webook-mysql-live-claim

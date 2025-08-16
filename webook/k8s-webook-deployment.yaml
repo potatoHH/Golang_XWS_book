@@ -1,0 +1,24 @@
+apiVersion: apps/v1  # 这个是 k8s 的版本
+kind: Deployment    # 这个是 k8s 的资源类型
+metadata:          # 元数据
+    name: webook-live      # 资源名称
+spec:             # 具体资源信息
+  replicas: 3  #部署的数量(副本)
+  selector:       # 匹配pod
+    matchLabels:    # 匹配标签
+      app: webook-live     # 标签名称
+# 模板  template 描述的是你的pod是什么样的
+  template:         # 模板
+    metadata:         # 元数据
+      labels:       # 标签
+        app: webook-live       # 标签名称
+    #pod里面的具体信息
+    spec:             # 具体信息
+      containers:       # 容器
+          - name: webook-live
+            image: flycash/webook-live:v0.0.1
+            ports:
+              - containerPort: 8080
+
+
+

@@ -1,26 +1,26 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: $title$
+  name: webook-live-reids
   labels:
-    app: $title$
+    app: webook-live-reids
 spec:
-  replicas: $1$
+  replicas: 1
   selector:
     matchLabels:
-      app: $title$
+      app: webook-live-reids
   template:
     metadata:
-      name: $title$
+      name: webook-live-reids
       labels:
-        app: $title$
+        app: webook-live-reids
     spec:
       containers:
-        - name: $title$
-          image: $nginx$
+        - name: webook-live-reids
+          image: redis:latest
           imagePullPolicy: IfNotPresent
           ports:
-            - containerPort: $80$
-              protocol: $TCP$
+            - containerPort: 80
+              protocol: TCP
       restartPolicy: Always
-      $END$
+      

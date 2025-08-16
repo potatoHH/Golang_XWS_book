@@ -1,13 +1,17 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: $title$
+  name: webook-live-redis
 spec:
   selector:
-    app: $title$
+    #全新的nodeport类型
+    type: NodePort
+    app: webook-live-redis
   ports:
-    - protocol: $TCP$
-      port: $80$
-      targetPort: $8080$
+    - protocol: TCP
+      port: 10379
+#      redis 默认端口
+      targetPort: 6379
+      nodePort: 30005
   type: NodePort
-  $END$
+  

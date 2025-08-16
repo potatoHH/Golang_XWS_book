@@ -53,3 +53,10 @@ func (svc *UserService) Login(ctx context.Context, email, password string) (doma
 	}
 	return u, nil
 }
+
+// 信息
+func (svc *UserService) Profile(ctx context.Context, id int64) (domain.User, error) {
+	//在缓存中取
+	u, err := svc.repo.FindById(ctx, id)
+	return u, err
+}
