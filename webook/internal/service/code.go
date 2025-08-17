@@ -2,12 +2,16 @@ package service
 
 import (
 	"Book_Exp/webook/internal/repository"
+	"Book_Exp/webook/internal/service/sms"
 	"context"
 	"fmt"
 	"math/rand"
 )
 
-var ErrCodeSendTooMany = repository.ErrCodeSendTooMany
+var (
+	ErrCodeSendTooMany  = repository.ErrCodeSendTooMany
+	ErrInvalidVerifyCod = repository.ErrInvalidVerifyCode
+)
 
 const (
 	codeTplId = "1877556"
@@ -19,8 +23,11 @@ type CodeService struct {
 	//tplId string
 }
 
-func NewCodeService() *CodeService {
-	return &CodeService{}
+func NewCodeService(repo *repository.CodeRepository, smsSvc sms.Service) *CodeService {
+	return &CodeService{
+		repo:   repo,
+		smsSvc: smsSvc,
+	}
 }
 
 // 发送验证码
@@ -57,5 +64,5 @@ func (svc *CodeService) Verify(ctx context.Context, biz, phone, inputCode string
 func (svc *CodeService) generateCode() string {
 	num := rand.Intn(1000000) //随机生成0-999999的数 包含
 	//格式化, 不够的加上前导符
-	return fmt.Sprintf("%6d", num)
+	return fmt.Sprintf("%06d", num)
 }

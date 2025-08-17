@@ -3,12 +3,15 @@ package main
 import (
 	"Book_Exp/webook/config"
 	"Book_Exp/webook/internal/repository"
+	"Book_Exp/webook/internal/repository/cache"
 	"Book_Exp/webook/internal/repository/dao"
 	"Book_Exp/webook/internal/service"
+	"Book_Exp/webook/internal/service/sms/memory"
 	"Book_Exp/webook/internal/web"
 	"Book_Exp/webook/internal/web/middleware"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+	"github.com/redis/go-redis/v9"
 	"strings"
 	"time"
 	//"github.com/go-sql-driver/mysql"
@@ -63,17 +66,28 @@ func initWebServer() *gin.Engine { // 初始化web服务
 	server.Use(middleware.NewLoginJwtMiddlewareBuilder().
 		IgnorePaths("/users/signup").
 		IgnorePaths("/users/login").
+		IgnorePaths("users/login_sms/code/send").
+		IgnorePaths("users/login_sms").
 		Build())
 	//server.Use(ratelimit.NewBuilder(redisClient, time.Minute, 100).Build()) //在多长时间内允许多少请求
 	return server
 }
+func initRedis() redis.Cmdable {
+	return redis.NewClient(&redis.Options{
+		Addr: config.Config.Redis.Addr,
+	})
+}
 
-func initUser(server *gin.Engine, db *gorm.DB) *web.UserHandler { //初始化用户服务
+func initUser(db *gorm.DB, rdb redis.Cmdable) *web.UserHandler { //初始化用户服务
 	ud := dao.NewUserDao(db)
-	repo := repository.NewUserRepository(ud, nil)
-	svc := service.NewService(repo)
-	u := web.NewUserHandler(svc)
-	u.RegisterRoutes(server)
+	uc := cache.NewUserCache(rdb)
+	repo := repository.NewUserRepository(ud, uc)
+	svc := service.NewUserService(repo)
+	codeCache := cache.NewCodeCache(rdb)
+	codeRepo := repository.NewCodeRepository(codeCache)
+	smsSvc := memory.NewService()
+	codeSvc := service.NewCodeService(codeRepo, smsSvc)
+	u := web.NewUserHandler(svc, codeSvc)
 	return u
 
 }
@@ -95,7 +109,7 @@ func initDB() *gorm.DB { // 初始化数据库
 func main() {
 	db := initDB()            // 初始化数据库
 	server := initWebServer() // 初始化web服务
-	initUser(server, db)      // 初始化用户
+	initUser(db, initRedis())
 	server.Run("127.0.0.1:8080")
 
 }

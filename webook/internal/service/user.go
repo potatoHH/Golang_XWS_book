@@ -17,11 +17,10 @@ type UserService struct { // 用户服务
 	repo *repository.UserRepository
 }
 
-func NewService(repo *repository.UserRepository) *UserService { // 构造函数
+func NewUserService(repo *repository.UserRepository) *UserService { // 构造函数
 	return &UserService{ // 返回一个用户服务
 		repo: repo,
 	}
-
 }
 
 // 注册
@@ -31,7 +30,6 @@ func (svc *UserService) SignUp(ctx context.Context, u domain.User) error {
 		return err
 	}
 	u.Password = string(hash) // 将密码加密后的结果赋给用户
-
 	return svc.repo.Create(ctx, u)
 }
 
@@ -52,6 +50,23 @@ func (svc *UserService) Login(ctx context.Context, email, password string) (doma
 		return domain.User{}, ErrInvalidUserOrPassword
 	}
 	return u, nil
+}
+func (svc *UserService) FindOrCreate(ctx context.Context, phone string) (domain.User, error) {
+	u, err := svc.FindOrCreate(ctx, phone)
+	//判断有没有这个用户
+	if err != repository.ErrUserNotFound {
+		return u, err
+	}
+	//你要明确,没有这个用户
+	err = svc.repo.Create(ctx, domain.User{
+		Phone: phone,
+	})
+	if err != nil {
+		return domain.User{}, err
+	}
+	//这个u没有id 因为这里会遇到主从延迟的问题
+	return svc.repo.FindByPhone(ctx, phone)
+
 }
 
 // 信息

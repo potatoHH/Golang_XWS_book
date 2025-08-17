@@ -2,6 +2,7 @@ package dao
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"github.com/go-sql-driver/mysql"
 	"gorm.io/gorm"
@@ -43,6 +44,11 @@ func (dao *UserDao) FindByEmail(ctx context.Context, email string) (User, error)
 	err := dao.db.WithContext(ctx).Where("email=?", email).First(&u).Error //查询
 	return u, err
 }
+func (dao *UserDao) FindByPhone(ctx context.Context, phone string) (User, error) {
+	var u User
+	err := dao.db.WithContext(ctx).Where("phone=?", phone).First(&u).Error //查询
+	return u, err
+}
 func (dao *UserDao) FindById(ctx context.Context, id int64) (User, error) {
 	var u User
 	err := dao.db.WithContext(ctx).Where("id=?", id).First(&u).Error //查询
@@ -51,8 +57,10 @@ func (dao *UserDao) FindById(ctx context.Context, id int64) (User, error) {
 
 // user在dao层直接对标sql的操作
 type User struct {
-	Id       int64  `gorm:"primaryKey autoIncrement"`
-	Email    string `gorm:"unique"`
+	Id int64 `gorm:"primaryKey autoIncrement"`
+	//这两个字段会造成索引冲突  用到sql.NullStrin  允许有多个空值  但不允许有多个""
+	Email    sql.NullString `gorm:"unique"`
+	Phone    sql.NullString `gorm:"unique"` //phone *string  这种写法你要解引用 ,你要判空
 	Password string
 	Ctime    int64 // 创建时间
 	Utime    int64 //更新时间

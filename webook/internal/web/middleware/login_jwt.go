@@ -66,7 +66,6 @@ func (l *LoginJwtMiddlewareBuilder) Build() gin.HandlerFunc {
 			ctx.AbortWithStatus(http.StatusUnauthorized) //401
 			return
 		}
-
 		//每10秒刷新一次
 		now := time.Now()
 		if claims.ExpiresAt.Time.Sub(now) < time.Second*50 {
