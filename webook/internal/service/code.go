@@ -1,8 +1,7 @@
-package sms
+package service
 
 import (
 	"Book_Exp/webook/internal/repository"
-	"Book_Exp/webook/internal/service/sms/tencent"
 	"context"
 	"fmt"
 	"math/rand"
@@ -16,7 +15,7 @@ const (
 
 type CodeService struct {
 	repo   *repository.CodeRepository
-	smsSvc tencent.Service
+	smsSvc sms.Service
 	//tplId string
 }
 
@@ -25,9 +24,10 @@ func NewCodeService() *CodeService {
 }
 
 // 发送验证码
-func (svc *CodeService) Send(ctx context.Context, phone string,
-	//区别业务场景
-	biz string) error {
+func (svc *CodeService) Send(ctx context.Context, biz string, phone string,
+
+// biz 区别业务场景
+) error {
 	//3个步骤生成验证码    1生成验证码 2.塞进去redis ,3发送验证码
 	code := svc.generateCode()
 	err := svc.repo.Store(ctx, biz, phone, code)
