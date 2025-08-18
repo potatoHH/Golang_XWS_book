@@ -10,8 +10,8 @@ import (
 )
 
 var (
-	ErrUserDuplicateEmail = errors.New("邮箱冲突")
-	ErrUserNotFound       = gorm.ErrRecordNotFound
+	ErrUserDuplicate = errors.New("邮箱冲突 or 手机号冲突")
+	ErrUserNotFound  = gorm.ErrRecordNotFound
 )
 
 type UserDao struct {
@@ -32,7 +32,8 @@ func (dao *UserDao) Insert(ctx context.Context, u User) error {
 	if MysqlErr, ok := err.(*mysql.MySQLError); ok {
 		const uniqueConflicsErrNo uint16 = 1062     //唯一冲突 的错误码
 		if MysqlErr.Number == uniqueConflicsErrNo { //是否唯一冲突
-			return ErrUserDuplicateEmail
+			//邮箱  or 手机号码 冲突
+			return ErrUserDuplicate
 		}
 	}
 	return err

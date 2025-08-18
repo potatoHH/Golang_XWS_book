@@ -9,7 +9,7 @@ import (
 )
 
 var (
-	ErrUserDuplicateEmail    = repository.ErrUserDuplicateEmail
+	ErrUserDuplicate         = repository.ErrUserDuplicate
 	ErrInvalidUserOrPassword = errors.New("用户名或者密码不对")
 )
 
@@ -53,16 +53,21 @@ func (svc *UserService) Login(ctx context.Context, email, password string) (doma
 }
 func (svc *UserService) FindOrCreate(ctx context.Context, phone string) (domain.User, error) {
 	u, err := svc.FindOrCreate(ctx, phone)
-	//判断有没有这个用户
+	//判断有没有这个用户  //快路径
 	if err != repository.ErrUserNotFound {
 		return u, err
 	}
-	//你要明确,没有这个用户
-	err = svc.repo.Create(ctx, domain.User{
+	//TODO 在系统资源不足,触发降级之后,不执行慢路径
+	//if ctx.Value("降级") == "true" {
+	//	return domain.User{}, errors.New("系统资源不足 降级")
+	//}
+	//你要明确,没有这个用户  慢路径
+	u = domain.User{
 		Phone: phone,
-	})
-	if err != nil {
-		return domain.User{}, err
+	}
+	err = svc.repo.Create(ctx, u)
+	if err != nil && err != repository.ErrUserDuplicate {
+		return u, err
 	}
 	//这个u没有id 因为这里会遇到主从延迟的问题
 	return svc.repo.FindByPhone(ctx, phone)

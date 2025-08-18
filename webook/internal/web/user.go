@@ -89,7 +89,7 @@ func (c *UserHandler) Signup(ctx *gin.Context) {
 		Email:    req.Email,
 		Password: req.Password,
 	})
-	if err == service.ErrUserDuplicateEmail { //邮箱重复
+	if err == service.ErrUserDuplicate { //邮箱重复
 		ctx.String(http.StatusOK, "邮箱重复,请换一个邮箱")
 		return
 	}
