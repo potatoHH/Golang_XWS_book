@@ -57,7 +57,7 @@ func (l *LoginJwtMiddlewareBuilder) Build() gin.HandlerFunc {
 			return
 		}
 		//err为nil, token不为nil
-		if token == nil || !token.Valid || claims.Uid <= 0 { // token校验失败
+		if token == nil || !token.Valid || claims.Id <= 0 { // token校验失败
 			ctx.AbortWithStatus(http.StatusUnauthorized) //401
 			return
 		}

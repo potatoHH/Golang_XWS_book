@@ -8,8 +8,11 @@ type User struct {
 	Id       int64
 	Email    string
 	Password string
-	Ctime    time.Time
 	Phone    string
+	Nickname string
+	AboutMe  string
+	Birthday time.Time
+	Ctime    time.Time
 }
 
 func (u *User) NewUser() {

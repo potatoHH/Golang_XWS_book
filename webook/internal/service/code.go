@@ -17,13 +17,18 @@ const (
 	codeTplId = "1877556"
 )
 
+type CodeServiceV1 interface {
+	Send(ctx context.Context, biz string, phone string) error
+	Verify(ctx context.Context, biz, phone, inputCode string) (bool, error)
+}
+
 type CodeService struct {
-	repo   *repository.CodeRepository
+	repo   repository.CodeRepository
 	smsSvc sms.Service
 	//tplId string
 }
 
-func NewCodeService(repo *repository.CodeRepository, smsSvc sms.Service) *CodeService {
+func NewCodeService(repo repository.CodeRepository, smsSvc sms.Service) CodeServiceV1 {
 	return &CodeService{
 		repo:   repo,
 		smsSvc: smsSvc,

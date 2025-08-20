@@ -4,12 +4,12 @@ import (
 	"Book_Exp/wire/repository/dao"
 )
 
-type Repository struct {
-	dao dao.UserDao
+type UserRepository struct {
+	dao *dao.UserDao
 }
 
-func NewRepository(dao dao.UserDao) *Repository {
-	return &Repository{
+func NewUserRepository(dao *dao.UserDao) *UserRepository {
+	return &UserRepository{
 		dao: dao,
 	}
 }

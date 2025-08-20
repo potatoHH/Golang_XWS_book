@@ -14,16 +14,24 @@ var (
 	ErrUserNotFound  = gorm.ErrRecordNotFound
 )
 
-type UserDao struct {
+type UserDao interface {
+	Insert(ctx context.Context, u User) error
+	FindByEmail(ctx context.Context, email string) (User, error)
+	FindByPhone(ctx context.Context, phone string) (User, error)
+	FindById(ctx context.Context, id int64) (User, error)
+	UpdateNonZeroFields(ctx context.Context, u User) error
+}
+
+type GormUserDao struct {
 	db *gorm.DB
 }
 
-func NewUserDao(db *gorm.DB) *UserDao {
-	return &UserDao{
+func NewUserDao(db *gorm.DB) UserDao {
+	return &GormUserDao{
 		db: db,
 	}
 }
-func (dao *UserDao) Insert(ctx context.Context, u User) error {
+func (dao *GormUserDao) Insert(ctx context.Context, u User) error {
 	//存毫秒数
 	now := time.Now().UnixMilli()
 	u.Utime = now
@@ -40,20 +48,28 @@ func (dao *UserDao) Insert(ctx context.Context, u User) error {
 }
 
 // 登录
-func (dao *UserDao) FindByEmail(ctx context.Context, email string) (User, error) {
+func (dao *GormUserDao) FindByEmail(ctx context.Context, email string) (User, error) {
 	var u User
 	err := dao.db.WithContext(ctx).Where("email=?", email).First(&u).Error //查询
 	return u, err
 }
-func (dao *UserDao) FindByPhone(ctx context.Context, phone string) (User, error) {
+func (dao *GormUserDao) FindByPhone(ctx context.Context, phone string) (User, error) {
 	var u User
 	err := dao.db.WithContext(ctx).Where("phone=?", phone).First(&u).Error //查询
 	return u, err
 }
-func (dao *UserDao) FindById(ctx context.Context, id int64) (User, error) {
+func (dao *GormUserDao) FindById(ctx context.Context, id int64) (User, error) {
 	var u User
 	err := dao.db.WithContext(ctx).Where("id=?", id).First(&u).Error //查询
 	return u, err
+}
+func (ud *GormUserDao) UpdateNonZeroFields(ctx context.Context, u User) error {
+	// 这种写法是很不清晰的，因为它依赖了 gorm 的两个默认语义
+	// 会使用 ID 来作为 WHERE 条件
+	// 会使用非零值来更新
+	// 另外一种做法是显式指定只更新必要的字段，
+	// 那么这意味着 DAO 和 service 中非敏感字段语义耦合了
+	return ud.db.Updates(&u).Error
 }
 
 // user在dao层直接对标sql的操作
