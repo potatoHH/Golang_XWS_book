@@ -4,14 +4,15 @@ import (
 	"Book_Exp/webook/internal/web"
 	"Book_Exp/webook/internal/web/middleware"
 	ratelimit "Book_Exp/webook/pkg/ginx/middlewares/ratlimit"
+	"strings"
+	"time"
+
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/redis/go-redis/v9"
-	"strings"
-	"time"
 )
 
-func InitWebService(middl []gin.HandlerFunc, hdl *web.UserHandler) *gin.Engine {
+func InitGin(middl []gin.HandlerFunc, hdl *web.UserHandler) *gin.Engine {
 	server := gin.Default()
 	server.Use(middl...)
 	hdl.RegisterRoutes(server)

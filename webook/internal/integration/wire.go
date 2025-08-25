@@ -1,6 +1,6 @@
 //go:build wireinject
 
-package wire
+package integration
 
 import (
 	"Book_Exp/webook/internal/repository"

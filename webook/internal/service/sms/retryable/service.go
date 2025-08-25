@@ -1,7 +1,7 @@
 package retryable
 
 //import (
-//	"Book_Exp/webook/internal/service/sms/tencent"
+//	"Book_Exp/webook/internal/failover/sms/tencent"
 //	"context"
 //)
 //

@@ -18,7 +18,7 @@ func NewLoginMiddlewareBuilder() *LoginMiddlewareBuilder {
 func (l *LoginMiddlewareBuilder) Build() gin.HandlerFunc {
 	gob.Register(time.Now()) // 注册类型以便在 gob 编码/解码过程中能够正确处理自定义类型
 	return func(ctx *gin.Context) {
-		sess := sessions.Default(ctx)
+		sess := sessions.Default(ctx) //// 获取session
 		id := sess.Get("userId")
 		//前面的session设置过了，注释这里不可能为nil
 		//if sess == nil {

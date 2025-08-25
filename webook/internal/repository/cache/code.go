@@ -5,6 +5,7 @@ import (
 	_ "embed"
 	"errors"
 	"fmt"
+
 	"github.com/redis/go-redis/v9"
 )
 
@@ -35,35 +36,35 @@ type RedisCodeCache struct {
 }
 
 // Go的最佳实践是返回具体类型
-func NewCodeCache(client redis.Cmdable) *RedisCodeCache {
+func NewCodeCache(client redis.Cmdable) CodeCache {
 	return &RedisCodeCache{
 		client: client,
 	}
 }
 func (c *RedisCodeCache) Set(ctx context.Context, biz, phone, code string) error {
-	res, err := c.client.Eval(ctx, luaSetCode, []string{c.key(biz, phone)}, code).Int64()
+	res, err := c.client.Eval(ctx, luaSetCode, []string{c.key(biz, phone)}, code).Int()
 	if err != nil {
 		return err
 	}
 	switch res {
 	case 0:
 		//没问题
-		return nil
+		return nil //没有问题
 	case -1:
 		//发送太频繁
-		return ErrCodeSendTooMany
-	case -2:
-		//遇到这个错误,说明有人在搞
-		return ErrCodeVerifyTooManyTimes
+		return ErrCodeSendTooMany //发送太频繁
+	//case -2:
+	//	//遇到这个错误,说明有人在搞
+	//	return ErrCodeVerifyTooManyTimes
 	default:
 		//系统错误
-		return ErrNoKnowCode
+		return ErrNoKnowCode //系统错误
 	}
 
 }
 
 func (c *RedisCodeCache) Verify(ctx context.Context, biz, phone, inputCode string) (bool, error) {
-	res, err := c.client.Eval(ctx, luaVerifyCode, []string{c.key(biz, phone)}, inputCode).Int64()
+	res, err := c.client.Eval(ctx, luaVerifyCode, []string{c.key(biz, phone)}, inputCode).Int()
 	if err != nil {
 		return false, err
 	}
@@ -85,5 +86,5 @@ func (c *RedisCodeCache) Verify(ctx context.Context, biz, phone, inputCode strin
 }
 
 func (c *RedisCodeCache) key(biz, phone string) string {
-	return fmt.Sprintf("phone-code-%s-%s", biz, phone)
+	return fmt.Sprintf("phone_code:%s:%s", biz, phone)
 }

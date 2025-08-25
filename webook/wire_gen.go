@@ -4,7 +4,7 @@
 //go:build !wireinject
 // +build !wireinject
 
-package integration
+package wire
 
 import (
 	"Book_Exp/webook/internal/repository"

@@ -4,9 +4,10 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"time"
+
 	"github.com/go-sql-driver/mysql"
 	"gorm.io/gorm"
-	"time"
 )
 
 var (
@@ -68,7 +69,7 @@ func (ud *GormUserDao) UpdateNonZeroFields(ctx context.Context, u User) error {
 	// 会使用 ID 来作为 WHERE 条件
 	// 会使用非零值来更新
 	// 另外一种做法是显式指定只更新必要的字段，
-	// 那么这意味着 DAO 和 service 中非敏感字段语义耦合了
+	// 那么这意味着 DAO 和 failover 中非敏感字段语义耦合了
 	return ud.db.Updates(&u).Error
 }
 

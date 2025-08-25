@@ -5,6 +5,7 @@ import (
 	"Book_Exp/webook/internal/repository"
 	"context"
 	"errors"
+
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -90,7 +91,7 @@ func (svc *UserService) UpdateNonSensitiveInfo(ctx context.Context, user domain.
 
 	// 写法2
 	// 这种是复杂写法，依赖于 repository 中更新会忽略 0 值
-	// 这个转换的意义在于，你在 service 层面上维护住了什么是敏感字段这个语义
+	// 这个转换的意义在于，你在 failover 层面上维护住了什么是敏感字段这个语义
 	user.Email = ""
 	user.Phone = ""
 	user.Password = ""

@@ -5,8 +5,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/redis/go-redis/v9"
 	"time"
+
+	"github.com/redis/go-redis/v9"
 )
 
 // var ErrKeyNotExist = errors.New("key 不存在")
@@ -27,7 +28,7 @@ type RedisUserCache struct {
 // A用到了B,B一定是接口
 // A用到了B,B一定A的字段
 // A用到了B,A绝对不初始化B,而是外面注入
-func NewUserCache(client redis.Cmdable) *RedisUserCache { // 这里返回的是一个指针
+func NewUserCache(client redis.Cmdable) UserCache { // 这里返回的是一个指针
 	return &RedisUserCache{
 		client:     client,
 		expiration: time.Minute * 15,

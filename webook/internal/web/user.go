@@ -4,12 +4,13 @@ import (
 	"Book_Exp/webook/internal/domain"
 	"Book_Exp/webook/internal/service"
 	"fmt"
+	"net/http"
+	"time"
+
 	regexp "github.com/dlclark/regexp2"
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
-	"github.com/golang-jwt/jwt/v5"
-	"net/http"
-	"time"
+	jwt "github.com/golang-jwt/jwt/v5"
 )
 
 // 确保Userhandler实现了handler的接口
@@ -297,11 +298,9 @@ func (c *UserHandler) ProfileJWT(ctx *gin.Context) {
 		AboutMe:  u.AboutMe,
 	})
 }
-
 func (c *UserHandler) SendLoginSmsCode(ctx *gin.Context) {
-
 	type Req struct {
-		Phone string `josn:"phone"`
+		Phone string `json:"phone"`
 	}
 	var req Req
 	err := ctx.Bind(&req)
@@ -311,20 +310,18 @@ func (c *UserHandler) SendLoginSmsCode(ctx *gin.Context) {
 	if req.Phone == "" {
 		ctx.JSON(http.StatusOK, Result{
 			Code: 4,
-			Msg:  "请输入手机号",
+			Msg:  "输入有误",
 		})
 	}
 	err = c.codeSvc.Send(ctx, biz, req.Phone)
 	switch err {
 	case nil:
 		ctx.JSON(http.StatusOK, Result{
-			Code: 4,
-			Msg:  "验证码校验成功",
+			Msg: "发送成功",
 		})
 	case service.ErrCodeSendTooMany:
 		ctx.JSON(http.StatusOK, Result{
-			Code: 6,
-			Msg:  "验证码发送次数太多,请稍后再试",
+			Msg: "验证码发送次数太多,请稍后再试",
 		})
 	default:
 		ctx.JSON(http.StatusOK, Result{

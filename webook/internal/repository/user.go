@@ -68,13 +68,13 @@ func (r *CachedUserRepository) FindById(ctx context.Context, id int64) (domain.U
 		return domain.User{}, err
 	}
 	u = r.entityToDomain(ue)
-	go func() {
-		err = r.cache.Set(ctx, u)
-		//打日志,做监控
-		if err != nil {
-
-		}
-	}()
+	_ = r.cache.Set(ctx, u)
+	//go func() {
+	//	//打日志,做监控
+	//	if err != nil {
+	//
+	//	}
+	//}()
 	return u, nil
 
 	//这里怎么版?err =io.EOF
@@ -86,7 +86,6 @@ func (r *CachedUserRepository) FindById(ctx context.Context, id int64) (domain.U
 	//我数据库限流
 
 	//选不加载, 用户体验差一点
-
 }
 func (r *CachedUserRepository) entityToDomain(u dao.User) domain.User {
 	return domain.User{
