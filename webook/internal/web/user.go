@@ -4,13 +4,12 @@ import (
 	"Book_Exp/webook/internal/domain"
 	"Book_Exp/webook/internal/service"
 	"fmt"
-	"net/http"
-	"time"
-
 	regexp "github.com/dlclark/regexp2"
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
 	jwt "github.com/golang-jwt/jwt/v5"
+	"net/http"
+	"time"
 )
 
 // 确保Userhandler实现了handler的接口
@@ -195,7 +194,7 @@ func (c *UserHandler) Login(ctx *gin.Context) {
 
 }
 func (c *UserHandler) logOut(ctx *gin.Context) {
-	sess := sessions.Default(ctx)  // 拿到session
+	sess := sessions.Default(ctx) // 拿到session
 	sess.Options(sessions.Options{ // 设置session的过期时间
 		//Secure:   true,      // https  开发环境不要用
 		//HttpOnly: true,      // js无法访问

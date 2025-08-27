@@ -21,7 +21,7 @@ func NewTimeoutFailoverSMSService(cnt, idx int32, svcs ...sms.Service) sms.Servi
 	}
 }
 
-func (t *TimeoutFailoverSMSService) Send(ctx context.Context, tpl string, args []string, numbers ...string) error {
+func (t *TimeoutFailoverSMSService) Send(ctx context.Context, biz string, args []string, numbers ...string) error {
 	idx := atomic.LoadInt32(&t.idx)
 	cnt := atomic.LoadInt32(&t.cnt)
 	if cnt > t.threshold {
@@ -38,7 +38,7 @@ func (t *TimeoutFailoverSMSService) Send(ctx context.Context, tpl string, args [
 	}
 	svc := t.svcs[idx]
 	//当使用的是svc
-	err := svc.Send(ctx, tpl, args, numbers...)
+	err := svc.Send(ctx, biz, args, numbers...)
 	switch err {
 	case nil:
 		//没有任何错误,重置计数器

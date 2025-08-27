@@ -19,9 +19,9 @@ func NewFailoverSMSService(svcs ...sms.Service) sms.Service {
 	}
 }
 
-func (f *FailoverSMSService) Send(ctx context.Context, tpl string, args []string, numbers ...string) error {
+func (f *FailoverSMSService) Send(ctx context.Context, biz string, args []string, numbers ...string) error {
 	for _, svc := range f.svcs {
-		err := svc.Send(ctx, tpl, args, numbers...)
+		err := svc.Send(ctx, biz, args, numbers...)
 		if err == nil {
 			return nil //发送成功了
 		}
@@ -31,13 +31,13 @@ func (f *FailoverSMSService) Send(ctx context.Context, tpl string, args []string
 	return errors.New("发送失败,所有的服务商都发送失败")
 }
 
-func (f *FailoverSMSService) SendV1(ctx context.Context, tpl string, args []string, numbers ...string) error {
+func (f *FailoverSMSService) SendV1(ctx context.Context, biz string, args []string, numbers ...string) error {
 	//二话不说先把下标往后推一位
 	idx := atomic.AddUint64(&f.idx, 1)
 	length := uint64(len(f.svcs))
 	for i := idx; i < idx+length; i++ { // 如果i=9 length=5 那么9%5=4
 		svc := f.svcs[int(i%length)]
-		err := svc.Send(ctx, tpl, args, numbers...)
+		err := svc.Send(ctx, biz, args, numbers...)
 		switch err {
 		case nil:
 			return nil
