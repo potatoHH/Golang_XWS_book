@@ -3,7 +3,6 @@ package ioc
 import (
 	"Book_Exp/webook/internal/web"
 	"Book_Exp/webook/internal/web/middleware"
-	ratelimit "Book_Exp/webook/pkg/ginx/middlewares/ratlimit"
 	"strings"
 	"time"
 
@@ -12,10 +11,11 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
-func InitGin(middl []gin.HandlerFunc, hdl *web.UserHandler) *gin.Engine {
+func InitGin(middl []gin.HandlerFunc, hdl *web.UserHandler, oauth2WechatHdl *web.OAuth2WechatHandler) *gin.Engine {
 	server := gin.Default()
 	server.Use(middl...)
 	hdl.RegisterRoutes(server)
+	oauth2WechatHdl.RegisterRoutes(server)
 	return server
 }
 func InitMiddlewares(redisClient redis.Cmdable) []gin.HandlerFunc {
@@ -26,8 +26,10 @@ func InitMiddlewares(redisClient redis.Cmdable) []gin.HandlerFunc {
 			IgnorePaths("/users/login").
 			IgnorePaths("users/login_sms/code/send").
 			IgnorePaths("users/login_sms").
+			IgnorePaths("oauth2/wechat/authurl").
+			IgnorePaths("oauth2/wechat/callback").
 			Build(),
-		ratelimit.NewBuilder(redisClient, time.Minute, 100).Build(), //在多长时间内允许多少请求
+		//ratelimit.NewBuilder(redisClient, 100).Build(), //在多长时间内允许多少请求
 	}
 }
 

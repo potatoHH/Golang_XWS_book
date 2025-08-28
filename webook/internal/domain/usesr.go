@@ -13,6 +13,10 @@ type User struct {
 	AboutMe  string
 	Birthday time.Time
 	Ctime    time.Time
+	//Unionid  string
+	//Openid   string
+	//不要合并,万一以后有同样的字段名
+	WechatInfo WecahteInfo
 }
 
 func (u *User) NewUser() {

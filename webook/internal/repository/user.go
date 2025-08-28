@@ -20,6 +20,7 @@ type UserRepository interface {
 	FindByPhone(ctx context.Context, phone string) (domain.User, error)
 	FindById(ctx context.Context, id int64) (domain.User, error)
 	Update(ctx context.Context, u domain.User) error
+	FindByWechat(ctx context.Context, openId string) (domain.User, error)
 }
 
 type CachedUserRepository struct { // 用户仓库
@@ -86,6 +87,14 @@ func (r *CachedUserRepository) FindById(ctx context.Context, id int64) (domain.U
 	//我数据库限流
 
 	//选不加载, 用户体验差一点
+}
+
+func (r *CachedUserRepository) FindByWechat(ctx context.Context, openId string) (domain.User, error) {
+	u, err := r.dao.FindByWechat(ctx, phone)
+	if err != nil {
+		return domain.User{}, err
+	}
+	return r.entityToDomain(u), nil
 }
 func (r *CachedUserRepository) entityToDomain(u dao.User) domain.User {
 	return domain.User{

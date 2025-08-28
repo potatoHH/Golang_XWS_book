@@ -4,12 +4,12 @@ import (
 	"Book_Exp/webook/internal/domain"
 	"Book_Exp/webook/internal/service"
 	"fmt"
+	"net/http"
+	"time"
+
 	regexp "github.com/dlclark/regexp2"
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
-	jwt "github.com/golang-jwt/jwt/v5"
-	"net/http"
-	"time"
 )
 
 // 确保Userhandler实现了handler的接口
@@ -30,6 +30,7 @@ type UserHandler struct {
 	emilRegxExp     *regexp.Regexp
 	passwordRegxExp *regexp.Regexp
 	codeSvc         service.CodeServiceV1
+	jwtHandler
 }
 
 func NewUserHandler(svc service.UserServiceV1, codeSvc service.CodeServiceV1) *UserHandler {
@@ -137,25 +138,6 @@ func (c *UserHandler) LoginJWT(ctx *gin.Context) {
 
 }
 
-func (c *UserHandler) setJWTToken(ctx *gin.Context, uid int64) error {
-	claims := UserClaims{
-		//设置过期时间
-		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour * 24)), //设置过期时间
-		},
-		Id:        uid,
-		UserAgent: ctx.Request.UserAgent(), // 设置用户代理
-	}
-	//使用JWT设置登录状态  比如要求userid放入token中
-	token := jwt.NewWithClaims(jwt.SigningMethodHS512, claims) // 创建一个token 使用jwt
-	tokenStr, err := token.SignedString([]byte("95osj3fUD7fo0mlYdDbncXz4VD2igvf0"))
-	if err != nil {
-		return err
-	}
-
-	ctx.Header("x-jwt-token", tokenStr)
-	return nil
-}
 func (c *UserHandler) Login(ctx *gin.Context) {
 	type LoginReq struct {
 		Email    string `json:"email"`
@@ -377,12 +359,4 @@ func (c *UserHandler) LoginSms(ctx *gin.Context) {
 		Msg:  "验证码校验成功",
 	})
 
-}
-
-type UserClaims struct { // jwt
-	jwt.RegisteredClaims // 继承
-	//声明你自己要放进去token里面的数据
-	Id int64
-
-	UserAgent string
 }

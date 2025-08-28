@@ -25,9 +25,11 @@ func InitWebServer() *gin.Engine {
 		service.NewUserService,
 		service.NewCodeService,
 		ioc.InitSmsService,
+		ioc.InitOAuth2WechatHandler,
 		//直接基于内存的实现
 		//memory.NewService,
 		web.NewUserHandler,
+		web.NewOAuth2WechatHandler,
 		//你的中间件呢,和注册路由
 		//你这个地方没有用到前面的东西,
 		ioc.InitGin,

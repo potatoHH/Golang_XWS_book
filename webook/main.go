@@ -1,4 +1,4 @@
-package wire
+package main
 
 func main() {
 	server := InitWebServer()

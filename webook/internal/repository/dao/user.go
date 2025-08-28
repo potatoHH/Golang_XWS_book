@@ -21,6 +21,7 @@ type UserDao interface {
 	FindByPhone(ctx context.Context, phone string) (User, error)
 	FindById(ctx context.Context, id int64) (User, error)
 	UpdateNonZeroFields(ctx context.Context, u User) error
+	FindByWecaht(ctx context.Context, openId string) (User, error)
 }
 
 type GormUserDao struct {
@@ -64,6 +65,7 @@ func (dao *GormUserDao) FindById(ctx context.Context, id int64) (User, error) {
 	err := dao.db.WithContext(ctx).Where("id=?", id).First(&u).Error //查询
 	return u, err
 }
+
 func (ud *GormUserDao) UpdateNonZeroFields(ctx context.Context, u User) error {
 	// 这种写法是很不清晰的，因为它依赖了 gorm 的两个默认语义
 	// 会使用 ID 来作为 WHERE 条件
@@ -82,4 +84,7 @@ type User struct {
 	Password string
 	Ctime    int64 // 创建时间
 	Utime    int64 //更新时间
+	//微信的字段
+	WechatUnionId sql.NullString `gorm:"unique"`
+	WechatOpenId  sql.NullString `gorm:"unique"`
 }

@@ -1,13 +1,17 @@
 package web
 
 import (
+	"Book_Exp/webook/internal/service"
 	"Book_Exp/webook/internal/service/oauth2/wechat"
-	"github.com/gin-gonic/gin"
 	"net/http"
+
+	"github.com/gin-gonic/gin"
 )
 
 type OAuth2WechatHandler struct {
 	svc wechat.Service
+	jwtHandler
+	userSvc service.UserServiceV1
 }
 
 func NewOAuth2WechatHandler(svc wechat.Service) *OAuth2WechatHandler {
@@ -39,5 +43,18 @@ func (h *OAuth2WechatHandler) AuthUrl(ctx *gin.Context) {
 }
 
 func (h *OAuth2WechatHandler) Callback(ctx *gin.Context) {
+	code := ctx.Query("code")
+	state := ctx.Query("state")
+	info, err := h.svc.VerityCode(ctx, code, state)
+	if err != nil {
+		ctx.JSON(http.StatusOK, Result{
+			Code: 5,
+			Msg:  "系统错误",
+		})
+		return
+	}
+	//从userService里面拿id
+	h.userSvc.
+		h.setJWTToken(ctx, info.ID)
 
 }
