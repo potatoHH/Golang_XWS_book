@@ -2,6 +2,7 @@ package ioc
 
 import (
 	"Book_Exp/webook/internal/service/oauth2/wechat"
+	"Book_Exp/webook/internal/web"
 	"os"
 )
 
@@ -15,4 +16,11 @@ func InitOAuth2WechatHandler() wechat.Service {
 		panic("没有找到环境变量 WECHAT_APP_SECRET")
 	}
 	return wechat.NewService(appId, appKey)
+}
+
+func NewWechatHandler() web.WechatHandlerConfig {
+	return web.WechatHandlerConfig{
+		Secure: false,
+	}
+
 }

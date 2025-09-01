@@ -34,6 +34,7 @@ func InitWebServer() *gin.Engine {
 		//你这个地方没有用到前面的东西,
 		ioc.InitGin,
 		ioc.InitMiddlewares,
+		ioc.NewWechatHandler,
 	)
 	return new(gin.Engine)
 }

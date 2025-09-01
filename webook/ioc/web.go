@@ -24,10 +24,11 @@ func InitMiddlewares(redisClient redis.Cmdable) []gin.HandlerFunc {
 		middleware.NewLoginJwtMiddlewareBuilder().
 			IgnorePaths("/users/signup").
 			IgnorePaths("/users/login").
-			IgnorePaths("users/login_sms/code/send").
-			IgnorePaths("users/login_sms").
-			IgnorePaths("oauth2/wechat/authurl").
-			IgnorePaths("oauth2/wechat/callback").
+			IgnorePaths("/users/login_sms/code/send").
+			IgnorePaths("/users/login_sms").
+			IgnorePaths("/oauth2/wechat/authurl").
+			IgnorePaths("/oauth2/wechat/callback").
+			IgnorePaths("/users/refresh_token").
 			Build(),
 		//ratelimit.NewBuilder(redisClient, 100).Build(), //在多长时间内允许多少请求
 	}
@@ -40,7 +41,7 @@ func corsHdl() gin.HandlerFunc {
 		AllowMethods: []string{"PUT", "PATCH", "POST", "GET"},
 		AllowHeaders: []string{"Content-Type", "authorization"},
 		//暴露给前端的header
-		ExposeHeaders: []string{"x-jwt-token"},
+		ExposeHeaders: []string{"x-jwt-token", "x-refresh-token"},
 		//是否允许你带cookie之类的东西
 		AllowCredentials: true,
 		AllowOriginFunc: func(origin string) bool {

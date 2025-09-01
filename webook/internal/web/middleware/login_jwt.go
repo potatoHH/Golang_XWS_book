@@ -3,11 +3,11 @@ package middleware
 import (
 	"Book_Exp/webook/internal/web"
 	"encoding/gob"
+	"net/http"
+	"time"
+
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
-	"net/http"
-	"strings"
-	"time"
 )
 
 // jwt登录校验
@@ -35,18 +35,19 @@ func (l *LoginJwtMiddlewareBuilder) Build() gin.HandlerFunc {
 			ctx.Request.URL.Path == "/users/signup" { //登录和注册接口，不需要登录校验
 			return
 		}
-
-		//我们使用jwt登录校验
-		tokenHeader := ctx.GetHeader("Authorization") //获取token
-		if tokenHeader == "" {
-			ctx.AbortWithStatus(http.StatusUnauthorized) //401 没登陆
-		}
-		segs := strings.SplitN(tokenHeader, " ", 2)                  // Authorization: Bearer xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-		if len(segs) != 2 || !strings.EqualFold(segs[0], "Bearer") { // 判断 Bearer
-			ctx.AbortWithStatus(http.StatusUnauthorized) //401
-			return
-		}
-		tokenStr := segs[1]
+		tokenStr := web.ExtractToken(ctx)
+		////我们使用jwt登录校验
+		//tokenHeader := ctx.GetHeader("Authorization") //获取token
+		//if tokenHeader == "" {
+		//	ctx.AbortWithStatus(http.StatusUnauthorized) //401 没登陆
+		//	return
+		//}
+		//segs := strings.SplitN(tokenHeader, " ", 2)                  // Authorization: Bearer xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+		//if len(segs) != 2 || !strings.EqualFold(segs[0], "Bearer") { // 判断 Bearer
+		//	ctx.AbortWithStatus(http.StatusUnauthorized) //401
+		//	return
+		//}
+		//tokenStr := segs[1]
 		claims := &web.UserClaims{}
 		//parsewithClaims里面一定要传指针 拿到token
 		token, err := jwt.ParseWithClaims(tokenStr, claims, func(token *jwt.Token) (interface{}, error) { // 解析token
@@ -67,17 +68,17 @@ func (l *LoginJwtMiddlewareBuilder) Build() gin.HandlerFunc {
 			return
 		}
 		//每10秒刷新一次
-		now := time.Now()
-		if claims.ExpiresAt.Time.Sub(now) < time.Second*50 {
-			//刷新过期时间
-			claims.ExpiresAt = jwt.NewNumericDate(time.Now().Add(time.Hour * 24)) //设置过期时间
-			tokenStr, err = token.SignedString([]byte("95osj3fUD7fo0mlYdDbncXz4VD2igvf0"))
-			if err != nil {
-				ctx.AbortWithStatus(http.StatusInternalServerError)
-			}
-		}
+		//now := time.Now()
+		//if claims.ExpiresAt.Time.Sub(now) < time.Second*50 {
+		//	//刷新过期时间
+		//	claims.ExpiresAt = jwt.NewNumericDate(time.Now().Add(time.Hour * 24)) //设置过期时间
+		//	tokenStr, err = token.SignedString([]byte("95osj3fUD7fo0mlYdDbncXz4VD2igvf0"))
+		//	if err != nil {
+		//		ctx.AbortWithStatus(http.StatusInternalServerError)
+		//	}
+		//}
 		ctx.Header("x-jwt-token", tokenStr)
-		ctx.Set("claims", claims)
+		//ctx.Set("claims", claims)
 	}
 
 }

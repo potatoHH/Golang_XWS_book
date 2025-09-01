@@ -3,13 +3,13 @@ package web
 import (
 	"Book_Exp/webook/internal/domain"
 	"Book_Exp/webook/internal/service"
-	"fmt"
 	"net/http"
 	"time"
 
 	regexp "github.com/dlclark/regexp2"
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
+	"github.com/golang-jwt/jwt/v5"
 )
 
 // 确保Userhandler实现了handler的接口
@@ -39,6 +39,7 @@ func NewUserHandler(svc service.UserServiceV1, codeSvc service.CodeServiceV1) *U
 		passwordRegxExp: regexp.MustCompile(passwordRegexPattern, regexp.None),
 		svc:             svc,
 		codeSvc:         codeSvc,
+		jwtHandler:      NewJWTHandler(),
 	}
 }
 
@@ -50,6 +51,7 @@ func (c *UserHandler) RegisterRoutes(server *gin.Engine) { // 注册路由
 	ug.POST("/edit", c.Edit)
 	ug.GET("/profile", c.Profile)
 	ug.POST("/login_sms/code/send", c.SendLoginSmsCode)
+	ug.POST("/refresh_token", c.RefreshToken)
 }
 
 // 路由接口
@@ -131,7 +133,10 @@ func (c *UserHandler) LoginJWT(ctx *gin.Context) {
 		ctx.String(http.StatusOK, "系统错误")
 		return
 	}
-	fmt.Println(user)
+	if err = c.setRefreshToken(ctx, user.Id); err != nil {
+		ctx.String(http.StatusOK, "系统错误")
+		return
+	}
 	ctx.String(http.StatusOK, "登录成功")
 
 	return
@@ -176,7 +181,7 @@ func (c *UserHandler) Login(ctx *gin.Context) {
 
 }
 func (c *UserHandler) logOut(ctx *gin.Context) {
-	sess := sessions.Default(ctx) // 拿到session
+	sess := sessions.Default(ctx)  // 拿到session
 	sess.Options(sessions.Options{ // 设置session的过期时间
 		//Secure:   true,      // https  开发环境不要用
 		//HttpOnly: true,      // js无法访问
@@ -250,6 +255,7 @@ func (c *UserHandler) Profile(ctx *gin.Context) {
 		ctx.String(http.StatusOK, "系统错误")
 		return
 	}
+	ctx.String(http.StatusOK, "这里是profile'")
 	ctx.JSON(http.StatusOK, Profile{
 		Email: u.Email,
 	})
@@ -354,9 +360,43 @@ func (c *UserHandler) LoginSms(ctx *gin.Context) {
 		})
 		return
 	}
+	if err = c.setRefreshToken(ctx, user.Id); err != nil {
+		ctx.JSON(http.StatusOK, Result{
+			Code: 5,
+			Msg:  "系统错误",
+		})
+		return
+	}
 	ctx.JSON(http.StatusOK, Result{
 		Code: 4,
 		Msg:  "验证码校验成功",
 	})
 
+}
+
+func (c *UserHandler) RefreshToken(ctx *gin.Context) {
+	//TODO 只有这个接口,拿出来的才是refresh_token,其他地方都是access_token
+	//假定长 token也放在这里
+	tokenStr := ExtractToken(ctx)
+	var rc RefreshClamis
+	token, err := jwt.ParseWithClaims(tokenStr, &rc, func(token *jwt.Token) (any, error) {
+		return c.rfKey, nil
+	})
+	//这边要保持和登录校验一直的逻辑,即返回401
+	if err != nil {
+		ctx.AbortWithStatus(http.StatusUnauthorized)
+		return
+	}
+	if token == nil || !token.Valid {
+		ctx.AbortWithStatus(http.StatusUnauthorized)
+		return
+	}
+	err = c.setJWTToken(ctx, rc.uid)
+	if err != nil {
+		ctx.AbortWithStatus(http.StatusUnauthorized)
+		return
+	}
+	ctx.JSON(http.StatusOK, Result{
+		Msg: "token 刷新成功",
+	})
 }

@@ -7,15 +7,13 @@ import (
 	"fmt"
 	"net/http"
 
-	uuid "github.com/lithammer/shortuuid/v4"
-
 	"net/url"
 )
 
 var redirectUrl = url.PathEscape("https://meoying.com/oauth2/wechat/callback") //"http://localhost:8080/oauth2/wechat/callback" 需要编码
 type Service interface {
-	AuthUrl(ctx context.Context) (string, error)
-	VerityCode(ctx context.Context, code string, state string) (domain.WecahteInfo, error)
+	AuthUrl(ctx context.Context, state string) (string, error)
+	VerityCode(ctx context.Context, code string) (domain.WecahteInfo, error)
 }
 
 type service struct {
@@ -33,13 +31,12 @@ func NewService(appId string, appSecret string) Service {
 	}
 }
 
-func (s *service) AuthUrl(ctx context.Context) (string, error) {
+func (s *service) AuthUrl(ctx context.Context, state string) (string, error) {
 	const urlPattern = "https://open.weixin.qq.com/connect/qrconnect?appid=%s&redirect_uri=%s&response_type=code&scope=snsapi_login&state=%s#wechat_redirect"
-	state := uuid.New()
 	return fmt.Sprint(urlPattern, s.appId, redirectUrl, state), nil
 }
 
-func (s *service) VerityCode(ctx context.Context, code string, state string) (domain.WecahteInfo, error) {
+func (s *service) VerityCode(ctx context.Context, code string) (domain.WecahteInfo, error) {
 	const targetPattern = "https://api.weixin.qq.com/sns/oauth2/access_token?appid=%s&secret=%s&code=%s&grant_type=authorization_code"
 	target := fmt.Sprintf(targetPattern, s.appId, s.appSecret, code)
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, target, nil)
