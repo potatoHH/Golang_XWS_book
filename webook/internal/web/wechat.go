@@ -3,6 +3,7 @@ package web
 import (
 	"Book_Exp/webook/internal/service"
 	"Book_Exp/webook/internal/service/oauth2/wechat"
+	ijwt "Book_Exp/webook/internal/web/jwt"
 	"errors"
 	"fmt"
 	"net/http"
@@ -15,7 +16,7 @@ import (
 
 type OAuth2WechatHandler struct {
 	svc wechat.Service
-	jwtHandler
+	ijwt.Handler
 	userSvc  service.UserServiceV1
 	stateKey []byte
 	cfg      WechatHandlerConfig
@@ -24,15 +25,14 @@ type WechatHandlerConfig struct {
 	Secure bool
 }
 
-func NewOAuth2WechatHandler(svc wechat.Service, userSvc service.UserServiceV1, cfg WechatHandlerConfig) *OAuth2WechatHandler {
+func NewOAuth2WechatHandler(svc wechat.Service, userSvc service.UserServiceV1, cfg WechatHandlerConfig, jwtHandler ijwt.Handler) *OAuth2WechatHandler {
 	return &OAuth2WechatHandler{
-		svc:        svc,
-		userSvc:    userSvc,
-		stateKey:   []byte("95osj3fUD7fo0mlYdDbncXz4VD2igvh1"),
-		cfg:        cfg,
-		jwtHandler: NewJWTHandler(),
+		svc:      svc,
+		userSvc:  userSvc,
+		stateKey: []byte("95osj3fUD7fo0mlYdDbncXz4VD2igvh1"),
+		cfg:      cfg,
+		Handler:  jwtHandler,
 	}
-
 }
 
 func (h *OAuth2WechatHandler) RegisterRoutes(s *gin.Engine) {
@@ -111,14 +111,7 @@ func (h *OAuth2WechatHandler) Callback(ctx *gin.Context) {
 		})
 
 	}
-	err = h.setJWTToken(ctx, u.Id)
-	if err != nil {
-		ctx.JSON(http.StatusOK, Result{
-			Code: 5,
-			Msg:  "系统错误",
-		})
-	}
-	err = h.setRefreshToken(ctx, u.Id)
+	err = h.SetLoginToken(ctx, u.Id)
 	if err != nil {
 		ctx.JSON(http.StatusOK, Result{
 			Code: 5,

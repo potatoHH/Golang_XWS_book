@@ -3,13 +3,17 @@ package web
 import (
 	"Book_Exp/webook/internal/domain"
 	"Book_Exp/webook/internal/service"
-	"net/http"
-	"time"
+	ijwt "Book_Exp/webook/internal/web/jwt"
 
 	regexp "github.com/dlclark/regexp2"
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/redis/go-redis/v9"
+	"go.uber.org/zap"
+
+	"net/http"
+	"time"
 )
 
 // 确保Userhandler实现了handler的接口
@@ -30,16 +34,17 @@ type UserHandler struct {
 	emilRegxExp     *regexp.Regexp
 	passwordRegxExp *regexp.Regexp
 	codeSvc         service.CodeServiceV1
-	jwtHandler
+	ijwt.Handler
+	cmd redis.Cmdable
 }
 
-func NewUserHandler(svc service.UserServiceV1, codeSvc service.CodeServiceV1) *UserHandler {
+func NewUserHandler(svc service.UserServiceV1, codeSvc service.CodeServiceV1, jwtHandler ijwt.Handler) *UserHandler {
 	return &UserHandler{
 		emilRegxExp:     regexp.MustCompile(emailRegexPattern, regexp.None),
 		passwordRegxExp: regexp.MustCompile(passwordRegexPattern, regexp.None),
 		svc:             svc,
 		codeSvc:         codeSvc,
-		jwtHandler:      NewJWTHandler(),
+		Handler:         jwtHandler,
 	}
 }
 
@@ -50,6 +55,7 @@ func (c *UserHandler) RegisterRoutes(server *gin.Engine) { // 注册路由
 	ug.POST("/login", c.LoginJWT)
 	ug.POST("/edit", c.Edit)
 	ug.GET("/profile", c.Profile)
+	ug.POST("/logout", c.LogOutJWT)
 	ug.POST("/login_sms/code/send", c.SendLoginSmsCode)
 	ug.POST("/refresh_token", c.RefreshToken)
 }
@@ -129,11 +135,7 @@ func (c *UserHandler) LoginJWT(ctx *gin.Context) {
 		ctx.String(http.StatusOK, "系统错误")
 		return
 	}
-	if err = c.setJWTToken(ctx, user.Id); err != nil {
-		ctx.String(http.StatusOK, "系统错误")
-		return
-	}
-	if err = c.setRefreshToken(ctx, user.Id); err != nil {
+	if err = c.SetLoginToken(ctx, user.Id); err != nil {
 		ctx.String(http.StatusOK, "系统错误")
 		return
 	}
@@ -168,7 +170,7 @@ func (c *UserHandler) Login(ctx *gin.Context) {
 	//登录成功之后,拿出session
 	sess := sessions.Default(ctx) // 拿到session
 	sess.Set("userId", user.Id)   // 设置session
-	//sess.Set("update_time", user.Id)  //放在这里不太合适
+	//sess.Set("update_time", user.Uid)  //放在这里不太合适
 	sess.Options(sessions.Options{ // 设置session的过期时间
 		//Secure:   true,      // https  开发环境不要用
 		//HttpOnly: true,      // js无法访问
@@ -180,6 +182,8 @@ func (c *UserHandler) Login(ctx *gin.Context) {
 	return
 
 }
+
+// TODO session 退出登录
 func (c *UserHandler) logOut(ctx *gin.Context) {
 	sess := sessions.Default(ctx)  // 拿到session
 	sess.Options(sessions.Options{ // 设置session的过期时间
@@ -225,9 +229,9 @@ func (c *UserHandler) Edit(ctx *gin.Context) {
 			})
 			return
 		}
-		uc := ctx.MustGet("user").(UserClaims)
+		uc := ctx.MustGet("user").(*ijwt.UserClaims)
 		err = c.svc.UpdateNonSensitiveInfo(ctx, domain.User{
-			Id:       uc.Id,
+			Id:       uc.Uid,
 			Nickname: req.Nickname,
 			Birthday: birthday,
 			AboutMe:  req.AboutMe,
@@ -255,7 +259,6 @@ func (c *UserHandler) Profile(ctx *gin.Context) {
 		ctx.String(http.StatusOK, "系统错误")
 		return
 	}
-	ctx.String(http.StatusOK, "这里是profile'")
 	ctx.JSON(http.StatusOK, Profile{
 		Email: u.Email,
 	})
@@ -271,8 +274,8 @@ func (c *UserHandler) ProfileJWT(ctx *gin.Context) {
 		Birthday string
 		AboutMe  string
 	}
-	uc := ctx.MustGet("user").(UserClaims)
-	u, err := c.svc.Profile(ctx, uc.Id)
+	uc := ctx.MustGet("user").(*ijwt.UserClaims)
+	u, err := c.svc.Profile(ctx, uc.Uid)
 	if err != nil {
 		ctx.String(http.StatusOK, "系统错误")
 		return
@@ -310,6 +313,7 @@ func (c *UserHandler) SendLoginSmsCode(ctx *gin.Context) {
 		ctx.JSON(http.StatusOK, Result{
 			Msg: "验证码发送次数太多,请稍后再试",
 		})
+		zap.L().Warn("短信发送太频繁")
 	default:
 		ctx.JSON(http.StatusOK, Result{
 			Code: 5,
@@ -333,6 +337,7 @@ func (c *UserHandler) LoginSms(ctx *gin.Context) {
 			Code: 5,
 			Msg:  "系统错误",
 		})
+		zap.L().Error("用户手机号码登录失败", zap.Error(err))
 		return
 	}
 	if !ok {
@@ -353,14 +358,7 @@ func (c *UserHandler) LoginSms(ctx *gin.Context) {
 		return
 	}
 	//这里怎么办,从哪里来
-	if err = c.setJWTToken(ctx, user.Id); err != nil {
-		ctx.JSON(http.StatusOK, Result{
-			Code: 5,
-			Msg:  "系统错误",
-		})
-		return
-	}
-	if err = c.setRefreshToken(ctx, user.Id); err != nil {
+	if err = c.SetLoginToken(ctx, user.Id); err != nil {
 		ctx.JSON(http.StatusOK, Result{
 			Code: 5,
 			Msg:  "系统错误",
@@ -375,13 +373,20 @@ func (c *UserHandler) LoginSms(ctx *gin.Context) {
 }
 
 func (c *UserHandler) RefreshToken(ctx *gin.Context) {
+	// TODO RefreshToken 可以同时刷新长短token,用redis来记录是否有效,即refresh_token是一次性的
 	//TODO 只有这个接口,拿出来的才是refresh_token,其他地方都是access_token
 	//假定长 token也放在这里
-	tokenStr := ExtractToken(ctx)
-	var rc RefreshClamis
+	tokenStr := c.ExtractToken(ctx)
+	var rc ijwt.RefreshClamis
 	token, err := jwt.ParseWithClaims(tokenStr, &rc, func(token *jwt.Token) (any, error) {
-		return c.rfKey, nil
+		return ijwt.RfKey, nil
 	})
+	err = c.CheackSession(ctx, rc.Ssid)
+	if err != nil {
+		//系统错误或者用户已经主动退出登录了
+		//这里也可以考虑,如果在redis已经崩溃的时候,就不要去校验是不是已经主动退出登录了
+		ctx.AbortWithStatus(http.StatusUnauthorized)
+	}
 	//这边要保持和登录校验一直的逻辑,即返回401
 	if err != nil {
 		ctx.AbortWithStatus(http.StatusUnauthorized)
@@ -391,7 +396,7 @@ func (c *UserHandler) RefreshToken(ctx *gin.Context) {
 		ctx.AbortWithStatus(http.StatusUnauthorized)
 		return
 	}
-	err = c.setJWTToken(ctx, rc.uid)
+	err = c.SetJWTToken(ctx, rc.Uid, rc.Ssid)
 	if err != nil {
 		ctx.AbortWithStatus(http.StatusUnauthorized)
 		return
@@ -399,4 +404,21 @@ func (c *UserHandler) RefreshToken(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, Result{
 		Msg: "token 刷新成功",
 	})
+
+}
+func (c *UserHandler) LogOutJWT(ctx *gin.Context) {
+	err := c.ClearToken(ctx)
+	//返回前端错误信息
+	if err != nil {
+		ctx.JSON(http.StatusOK, Result{
+			Code: 5,
+			Msg:  "登录退出失败",
+		})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, Result{
+		Msg: "登录退出成功",
+	})
+
 }

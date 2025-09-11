@@ -1,7 +1,7 @@
 package middleware
 
 import (
-	"Book_Exp/webook/internal/web"
+	ijwt "Book_Exp/webook/internal/web/jwt"
 	"encoding/gob"
 	"net/http"
 	"time"
@@ -13,10 +13,13 @@ import (
 // jwt登录校验
 type LoginJwtMiddlewareBuilder struct { // 登录中间件
 	paths []string
+	ijwt.Handler
 }
 
-func NewLoginJwtMiddlewareBuilder() *LoginJwtMiddlewareBuilder {
-	return &LoginJwtMiddlewareBuilder{}
+func NewLoginJwtMiddlewareBuilder(jwtHandler ijwt.Handler) *LoginJwtMiddlewareBuilder {
+	return &LoginJwtMiddlewareBuilder{
+		Handler: jwtHandler,
+	}
 }
 func (l *LoginJwtMiddlewareBuilder) IgnorePaths(paths string) *LoginJwtMiddlewareBuilder {
 	l.paths = append(l.paths, paths)
@@ -35,7 +38,7 @@ func (l *LoginJwtMiddlewareBuilder) Build() gin.HandlerFunc {
 			ctx.Request.URL.Path == "/users/signup" { //登录和注册接口，不需要登录校验
 			return
 		}
-		tokenStr := web.ExtractToken(ctx)
+		tokenStr := l.ExtractToken(ctx)
 		////我们使用jwt登录校验
 		//tokenHeader := ctx.GetHeader("Authorization") //获取token
 		//if tokenHeader == "" {
@@ -48,7 +51,7 @@ func (l *LoginJwtMiddlewareBuilder) Build() gin.HandlerFunc {
 		//	return
 		//}
 		//tokenStr := segs[1]
-		claims := &web.UserClaims{}
+		claims := &ijwt.UserClaims{}
 		//parsewithClaims里面一定要传指针 拿到token
 		token, err := jwt.ParseWithClaims(tokenStr, claims, func(token *jwt.Token) (interface{}, error) { // 解析token
 			return []byte("95osj3fUD7fo0mlYdDbncXz4VD2igvf0"), nil
@@ -58,7 +61,7 @@ func (l *LoginJwtMiddlewareBuilder) Build() gin.HandlerFunc {
 			return
 		}
 		//err为nil, token不为nil
-		if token == nil || !token.Valid || claims.Id <= 0 { // token校验失败
+		if token == nil || !token.Valid || claims.Uid <= 0 { // token校验失败
 			ctx.AbortWithStatus(http.StatusUnauthorized) //401
 			return
 		}
@@ -66,6 +69,13 @@ func (l *LoginJwtMiddlewareBuilder) Build() gin.HandlerFunc {
 		if claims.UserAgent != ctx.Request.UserAgent() {
 			ctx.AbortWithStatus(http.StatusUnauthorized) //401
 			return
+
+		}
+		err = l.CheackSession(ctx, claims.Ssid)
+		if err != nil {
+			//系统错误或者用户已经主动退出登录了
+			//这里也可以考虑,如果在redis已经崩溃的时候,就不要去校验是不是已经主动退出登录了
+			ctx.AbortWithStatus(http.StatusUnauthorized)
 		}
 		//每10秒刷新一次
 		//now := time.Now()
@@ -77,8 +87,8 @@ func (l *LoginJwtMiddlewareBuilder) Build() gin.HandlerFunc {
 		//		ctx.AbortWithStatus(http.StatusInternalServerError)
 		//	}
 		//}
-		ctx.Header("x-jwt-token", tokenStr)
-		//ctx.Set("claims", claims)
+		//ctx.Header("x-jwt-token", tokenStr)
+		ctx.Set("claims", claims)
 	}
 
 }

@@ -2,7 +2,11 @@ package ioc
 
 import (
 	"Book_Exp/webook/internal/web"
+	ijwt "Book_Exp/webook/internal/web/jwt"
 	"Book_Exp/webook/internal/web/middleware"
+	logger2 "Book_Exp/webook/pkg/ginx/middlewares/logger"
+	"Book_Exp/webook/pkg/logger"
+	"context"
 	"strings"
 	"time"
 
@@ -11,17 +15,24 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
-func InitGin(middl []gin.HandlerFunc, hdl *web.UserHandler, oauth2WechatHdl *web.OAuth2WechatHandler) *gin.Engine {
+func InitGin(middl []gin.HandlerFunc, userhdl *web.UserHandler, oauth2WechatHdl *web.OAuth2WechatHandler, articleHdl *web.ArticleHandler) *gin.Engine {
 	server := gin.Default()
 	server.Use(middl...)
-	hdl.RegisterRoutes(server)
+	userhdl.RegisterRoutes(server)
+	articleHdl.RegisterRoutes(server)
 	oauth2WechatHdl.RegisterRoutes(server)
 	return server
 }
-func InitMiddlewares(redisClient redis.Cmdable) []gin.HandlerFunc {
+func InitMiddlewares(redisClient redis.Cmdable, jwthdl ijwt.Handler, l logger.LoggerV1) []gin.HandlerFunc {
 	return []gin.HandlerFunc{
 		corsHdl(),
-		middleware.NewLoginJwtMiddlewareBuilder().
+		logger2.NewBuilder(func(ctx context.Context, al *logger2.AccessLog) {
+			l.Debug("HTTP请求", logger.Field{
+				Key:   "al",
+				Value: al,
+			})
+		}).AllowRespBody().AllowRepBody().Build(),
+		middleware.NewLoginJwtMiddlewareBuilder(jwthdl).
 			IgnorePaths("/users/signup").
 			IgnorePaths("/users/login").
 			IgnorePaths("/users/login_sms/code/send").

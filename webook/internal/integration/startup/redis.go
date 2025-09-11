@@ -1,21 +1,14 @@
-package startup
+package ioc
 
 import (
-	"context"
 	"github.com/redis/go-redis/v9"
+	"github.com/spf13/viper"
 )
 
-var redisClient redis.Cmdable
-
 func InitRedis() redis.Cmdable {
-	if redisClient == nil {
-		redisClient = redis.NewClient(&redis.Options{
-			Addr: "localhost:6379",
-		})
-
-		for err := redisClient.Ping(context.Background()).Err(); err != nil; {
-			panic(err)
-		}
-	}
-	return redisClient
+	addr := viper.GetString("redis.addr")
+	return redis.NewClient(&redis.Options{
+		Addr: addr,
+		//Addr: config.Config.Redis.Addr,
+	})
 }

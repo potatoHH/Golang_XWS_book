@@ -10,6 +10,6 @@ var Config = config{
 		"root:root@tcp(localhost:13316)/webook",
 	},
 	Redis: ReidsConfig{
-		"locallhost:6379",
+		"localhost:6379",
 	},
 }

@@ -1,43 +1,58 @@
 package startup
 
 import (
-	"context"
-	"database/sql"
-	intrDAO "gitee.com/geekbang/basic-go/webook/interactive/repository/dao"
+	"Book_Exp/webook/internal/repository/dao"
+	"Book_Exp/webook/pkg/logger"
+	"time"
+
+	"github.com/spf13/viper"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
-	"log"
-	"time"
+	glogger "gorm.io/gorm/logger"
 )
 
-var db *gorm.DB
+func InitDB(l logger.LoggerV1) *gorm.DB {
+	type Config struct {
+		DSN string `yaml:"dsn"`
+	}
+	var cfg = Config{
+		DSN: "root:root@tcp(localhost:13316)/webook_default",
+	}
+	err := viper.UnmarshalKey("db", &cfg)
+	if err != nil {
+		panic(err)
+	}
+	db, err := gorm.Open(mysql.Open(cfg.DSN), &gorm.Config{
+		//缺了一个writer
+		Logger: glogger.New(gormLoggerFunc(l.Debug), glogger.Config{
+			SlowThreshold:             time.Microsecond * 10, //50/100毫米            // 慢查询阈值
+			IgnoreRecordNotFoundError: true,                  // 忽略记录未找到错误
+			ParameterizedQueries:      true,                  // 使用参数化查询
+			LogLevel:                  glogger.Info,          // 日志级别
+		}),
+	})
 
-// InitTestDB 测试的话，不用控制并发。等遇到了并发问题再说
-func InitTestDB() *gorm.DB {
-	if db == nil {
-		dsn := "root:root@tcp(localhost:13316)/webook"
-		sqlDB, err := sql.Open("mysql", dsn)
-		if err != nil {
-			panic(err)
-		}
-		for {
-			ctx, cancel := context.WithTimeout(context.Background(), time.Second)
-			err = sqlDB.PingContext(ctx)
-			cancel()
-			if err == nil {
-				break
-			}
-			log.Println("等待连接 MySQL", err)
-		}
-		db, err = gorm.Open(mysql.Open(dsn))
-		if err != nil {
-			panic(err)
-		}
-		err = intrDAO.InitTables(db)
-		if err != nil {
-			panic(err)
-		}
-		//db = db.Debug()
+	if err != nil {
+		panic(err)
+	}
+	err = dao.InitTable(db) // 初始化表
+	if err != nil {
+		panic(err)
 	}
 	return db
 }
+
+type gormLoggerFunc func(msg string, fields ...logger.Field)
+
+func (g gormLoggerFunc) Printf(msg string, args ...interface{}) {
+	g(msg, logger.Field{Key: "args", Value: args})
+}
+
+//type Dosomting interface {
+//	DoABC() string
+//}
+//type DosomtingFunc func() string //单方法
+//
+//func (d DosomtingFunc) DoABC() string {
+//	return d()
+//}

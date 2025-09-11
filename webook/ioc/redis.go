@@ -1,12 +1,14 @@
 package ioc
 
 import (
-	"Book_Exp/webook/config"
 	"github.com/redis/go-redis/v9"
+	"github.com/spf13/viper"
 )
 
 func InitRedis() redis.Cmdable {
+	addr := viper.GetString("redis.addr")
 	return redis.NewClient(&redis.Options{
-		Addr: config.Config.Redis.Addr,
+		Addr: addr,
+		//Addr: config.Config.Redis.Addr,
 	})
 }

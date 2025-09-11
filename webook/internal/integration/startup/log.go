@@ -1,9 +1,15 @@
-package startup
+package ioc
 
 import (
-	"gitee.com/geekbang/basic-go/webook/pkg/logger"
+	"Book_Exp/webook/pkg/logger"
+
+	"go.uber.org/zap"
 )
 
-func InitLog() logger.LoggerV1 {
-	return logger.NewNoOpLogger()
+func InitLogger() logger.LoggerV1 {
+	l, err := zap.NewDevelopment()
+	if err != nil {
+		panic(err)
+	}
+	return logger.NewZapLogger(l)
 }

@@ -1,6 +1,6 @@
 //go:build wireinject
 
-package wire
+package main
 
 import (
 	"Book_Exp/webook/internal/repository"
@@ -8,6 +8,7 @@ import (
 	"Book_Exp/webook/internal/repository/dao"
 	"Book_Exp/webook/internal/service"
 	"Book_Exp/webook/internal/web"
+	ijwt "Book_Exp/webook/internal/web/jwt"
 	"Book_Exp/webook/ioc"
 
 	"github.com/gin-gonic/gin"
@@ -17,6 +18,7 @@ import (
 func InitWebServer() *gin.Engine {
 	wire.Build(
 		ioc.InitDB, ioc.InitRedis, //最基础的第三方依 赖
+		ioc.InitLogger,
 		dao.NewUserDao,
 		cache.NewUserCache,
 		cache.NewCodeCache,
@@ -26,6 +28,7 @@ func InitWebServer() *gin.Engine {
 		service.NewCodeService,
 		ioc.InitSmsService,
 		ioc.InitOAuth2WechatHandler,
+		ijwt.NewRedisJWTHandler,
 		//直接基于内存的实现
 		//memory.NewService,
 		web.NewUserHandler,

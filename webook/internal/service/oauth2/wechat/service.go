@@ -2,6 +2,7 @@ package wechat
 
 import (
 	"Book_Exp/webook/internal/domain"
+	"Book_Exp/webook/pkg/logger"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -20,14 +21,16 @@ type service struct {
 	appId     string
 	appSecret string
 	client    *http.Client
+	logger    logger.LoggerV1
 }
 
-func NewService(appId string, appSecret string) Service {
+func NewService(appId string, appSecret string, l logger.LoggerV1) Service {
 	return &service{
 		appId:     appId,
 		appSecret: appSecret,
 		//依赖注入,但是没有完全注入
 		client: http.DefaultClient,
+		logger: l,
 	}
 }
 
@@ -53,6 +56,7 @@ func (s *service) VerityCode(ctx context.Context, code string) (domain.WecahteIn
 	if err != nil {
 		return domain.WecahteInfo{}, err
 	}
+
 	if res.Errcode != 0 {
 		return domain.WecahteInfo{}, fmt.Errorf("微信返回错误响应,错误码:%d,错误信息:%s", res.Errcode, res.Errmsg)
 	}

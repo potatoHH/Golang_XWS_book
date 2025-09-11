@@ -3,6 +3,7 @@ package service
 import (
 	"Book_Exp/webook/internal/domain"
 	"Book_Exp/webook/internal/repository"
+	"Book_Exp/webook/pkg/logger"
 	"context"
 	"errors"
 
@@ -24,12 +25,21 @@ type UserServiceV1 interface {
 }
 
 type UserService struct { // 用户服务
-	repo repository.UserRepository
+	repo   repository.UserRepository
+	logger logger.LoggerV1
 }
 
-func NewUserService(repo repository.UserRepository) UserServiceV1 { // 构造函数
+func NewUserService(repo repository.UserRepository, l logger.LoggerV1) UserServiceV1 { // 构造函数
+	return &UserService{
+		repo:   repo,
+		logger: l,
+	}
+}
+func NewUserServiceV1(repo repository.UserRepository, l logger.LoggerV1) UserServiceV1 { // 构造函数
 	return &UserService{
 		repo: repo,
+		//TODO右边的写法就是确保，万一将来需要使用不同的 Logger时，你只需要修改 NewUserService这个方法。  预留了变化空间
+		logger: l,
 	}
 }
 
@@ -71,6 +81,7 @@ func (svc *UserService) FindOrCreate(ctx context.Context, phone string) (domain.
 	//if ctx.Value("降级") == "true" {
 	//	return domain.User{}, errors.New("系统资源不足 降级")
 	//}
+	svc.logger.Info("用户未注册,注册新用户", logger.String("phone", phone))
 	//你要明确,没有这个用户  慢路径
 	u = domain.User{
 		Phone: phone,
@@ -105,6 +116,9 @@ func (svc *UserService) FindOrCreateByWechat(ctx context.Context, info domain.We
 	if err != repository.ErrUserNotFound {
 		return u, err
 	}
+	//svc.logger.Info("微信未注册,注册新用户", zap.Any("wecaht_info", info))
+	//loggerxx.Logger.Info("微信未注册,注册新用户", zap.Any("wecaht_info", info))
+	svc.logger.Info("微信未注册,注册新用户", logger.String("wecaht_info", info.OpenId))
 	//TODO 在系统资源不足,触发降级之后,不执行慢路径
 	//你要明确,没有这个用户  慢路径
 	u = domain.User{
