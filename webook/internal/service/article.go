@@ -16,7 +16,7 @@ type ArticleService interface {
 type ArticleServiceV1 struct {
 	repo article.ArticleRepository
 
-	//TODO V1
+	//TODO V1 依赖两个不同的repository 来解决这种跨表, 或者跨库的问题
 	author article.ArticleAuthorRepository
 	reader article.ArticleReaderRepository
 	l      logger.LoggerV1
@@ -44,13 +44,7 @@ func (a *ArticleServiceV1) Save(ctx context.Context, art domain.Article) (int64,
 }
 
 func (a *ArticleServiceV1) Publish(ctx context.Context, art domain.Article) (int64, error) {
-	panic("123")
-
-	//制作库
-	//id, err := a.repo.Create(ctx, art)
-	////线上库
-	//id, err := a.repo.SyncToLiveDB(ctx, art)
-
+	return a.repo.Sync(ctx, art)
 }
 
 func (a *ArticleServiceV1) PublishV1(ctx context.Context, art domain.Article) (int64, error) {

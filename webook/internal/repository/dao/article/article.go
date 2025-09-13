@@ -1,4 +1,4 @@
-package dao
+package article
 
 import (
 	"context"
@@ -6,14 +6,42 @@ import (
 	"time"
 
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 type ArticleDAO interface {
 	Insert(ctx context.Context, art Article) (int64, error)
-	UpdateById(ctx context.Context, article Article) error
+	UpdateById(ctx context.Context, art Article) error
+	Sync(ctx context.Context, art Article) (int64, error)
+	UpSert(ctx context.Context, art PublishArticle) error
 }
 type GormArticleDao struct {
 	db *gorm.DB
+}
+
+// UpSert nsert OR Update
+func (dao *GormArticleDao) UpSert(ctx context.Context, art PublishArticle) error {
+	now := time.Now().UnixMilli()
+	art.Ctime = now
+	art.Utime = now
+	//这个是插入, clauses.Onconfilict 是数据冲突了
+	err := dao.db.Clauses(clause.OnConflict{
+		// 那些列冲突
+		//Columns:[]clause.Column{
+		//	clause.Column{Name: "id"},
+		//},
+		//数据冲突,啥也不干  DoNothing:
+		//数据冲突了,并且符合where 条件的就会执行更新 DoUpdate  Where:
+		DoUpdates: clause.Assignments(map[string]interface{}{
+			"title":   art.Title,
+			"content": art.Content,
+			"utime":   art.Utime,
+		}),
+	}).Create(&art).Error
+	// MySql 最终的语句 Insert xxx On Duplicate key Update xxx   如果发生数据冲突就执行更新
+	// 一条 msyql 不需要开事务
+	// auto commit 自动提交
+	return err
 }
 
 func NewArticleDao(db *gorm.DB) ArticleDAO {
@@ -51,6 +79,30 @@ func (dao *GormArticleDao) UpdateById(ctx context.Context, art Article) error {
 		return fmt.Errorf("更新失败,可能是创作者非法 id:%d,author_id:%d", art.Id, art.AuthorId)
 	}
 	return res.Error
+}
+func (dao *GormArticleDao) Sync(ctx context.Context, art Article) (int64, error) {
+	//TODO 先操作制作库(制作表),在操作线上库(线上表)
+	//在事务内部采用闭包的形态
+	//在gorm 帮助我们管理了事务的声明
+	var id = art.Id
+	//tx=> transaction
+	//TODO begin,commit,rollback 都不需要我们去管理
+	err := dao.db.Transaction(func(tx *gorm.DB) error {
+		var err error
+		txDAO := NewGORMArticleDAO(tx)
+		if art.Id > 0 {
+			err = txDAO.UpdateById(ctx, art)
+
+		} else {
+			id, err = txDAO.Insert(ctx, art)
+		}
+		if err != nil {
+			return err
+		}
+		//操作线上库
+		return txDAO.UpSert(ctx, PublishArticle{Article: art})
+	})
+	return id, err
 
 }
 

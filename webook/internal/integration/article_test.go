@@ -1,7 +1,7 @@
 package integration
 
 import (
-	"Book_Exp/webook/internal/repository/dao"
+	"Book_Exp/webook/internal/repository/dao/article"
 	"Book_Exp/webook/internal/web"
 	ijwt "Book_Exp/webook/internal/web/jwt"
 	"bytes"
@@ -58,14 +58,14 @@ func (s *ArticleTestSuite) TestEdit() {
 
 			},
 			after: func(t *testing.T) {
-				var art dao.Article
+				var art article.Article
 				err := s.db.Where("id = ?", 1).First(&art).Error
 				assert.NoError(t, err)
 				assert.True(t, art.Ctime > 0)
 				assert.True(t, art.Utime > 0)
 				art.Ctime = 0
 				art.Utime = 0
-				assert.Equal(t, dao.Article{
+				assert.Equal(t, article.Article{
 					Id:       1,
 					Title:    "测试帖子",
 					Content:  "测试帖子内容",
@@ -88,14 +88,14 @@ func (s *ArticleTestSuite) TestEdit() {
 
 			},
 			after: func(t *testing.T) {
-				var art dao.Article
+				var art article.Article
 				err := s.db.Where("id = ?", 1).First(&art).Error
 				assert.NoError(t, err)
 				assert.True(t, art.Ctime > 0)
 				assert.True(t, art.Utime > 0)
 				art.Ctime = 0
 				art.Utime = 0
-				assert.Equal(t, dao.Article{
+				assert.Equal(t, article.Article{
 					Id:       2,
 					Title:    "新的标题",
 					Content:  "新的内容",
@@ -118,7 +118,7 @@ func (s *ArticleTestSuite) TestEdit() {
 			name: "修改其他人的帖子",
 			before: func(t *testing.T) {
 				//提前准备数据
-				err := s.db.Create(dao.Article{
+				err := s.db.Create(article.Article{
 					Id:       3,
 					Title:    "我的标题",
 					Content:  "我的内容",
@@ -130,14 +130,14 @@ func (s *ArticleTestSuite) TestEdit() {
 
 			},
 			after: func(t *testing.T) {
-				var art dao.Article
+				var art article.Article
 				err := s.db.Where("id = ?", 3).First(&art).Error
 				assert.NoError(t, err)
 				assert.True(t, art.Ctime > 0)
 				assert.True(t, art.Utime > 0)
 				art.Ctime = 0
 				art.Utime = 0
-				assert.Equal(t, dao.Article{
+				assert.Equal(t, article.Article{
 					Id:       3,
 					Title:    "我的标题",
 					Content:  "我的内容",
