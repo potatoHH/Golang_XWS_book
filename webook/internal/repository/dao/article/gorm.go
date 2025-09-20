@@ -15,33 +15,55 @@ type ArticleDAO interface {
 	Sync(ctx context.Context, art Article) (int64, error)
 	UpSert(ctx context.Context, art PublishArticle) error
 	SyncStatus(ctx context.Context, id int64, author int64, status uint8) error
+	GetByAuthor(ctx context.Context, uid int64, limit int, offset int) ([]Article, error)
+	GetByID(ctx context.Context, id int64) (Article, error)
 }
 type GormArticleDao struct {
 	db *gorm.DB
 }
 
+func (dao *GormArticleDao) GetByID(ctx context.Context, id int64) (Article, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (dao *GormArticleDao) GetByAuthor(ctx context.Context, author int64, limit int, offset int) ([]Article, error) {
+	var arts []Article
+	// 在设计order by  语句的时候,要注意order by 中命中数据命中索引
+	err := dao.db.WithContext(ctx).Model(&Article{}).
+		Where("author_id=?", author).
+		Offset(offset).Limit(limit).
+		//Order("utime DESC").
+		Order(clause.OrderBy{Columns: []clause.OrderByColumn{
+			{Column: clause.Column{Name: "utime"}, Desc: true},
+			//{Column: clause.Column{Name: "ctime"}, Desc: false},
+		}}).
+		Find(&arts).Error
+	return arts, err
+
+}
+
 func (dao *GormArticleDao) SyncStatus(ctx context.Context, id int64, author int64, status uint8) error {
-	time := time.Now().UnixMilli()
-	return dao.db.Transaction(func(tx *gorm.DB) error {
-		res := tx.Model(&Article{}).Where("id=? AND author_id=?", id, author).
-			Updates(map[string]any{
-				"status": status,
-				"utime":  time,
-			})
+	return dao.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		res := tx.Model(&Article{}).
+			Where("id=? AND author_id = ?", id, author).
+			Update("status", status)
 		if res.Error != nil {
-			//数据库有问题
 			return res.Error
 		}
 		if res.RowsAffected != 1 {
-			//要么是ID错了,要么作者不对  没必要再用id 搜索数据库来区分这两种情况
-			//用prometheus 打点,只要频繁出现,你就要警告,然后手工接入排查
-			return fmt.Errorf("更新失败,可能是创作者非法 id:%d,author_id:%d", id, author)
+			return ErrPossibleIncorrectAuthor
 		}
-		return tx.Model(&Article{}).Where("id=? ", id).
-			Updates(map[string]any{
-				"status": status,
-				"utime":  time,
-			}).Error
+
+		res = tx.Model(&PublishedArticle{}).
+			Where("id=? AND author_id = ?", id, author).Update("status", status)
+		if res.Error != nil {
+			return res.Error
+		}
+		if res.RowsAffected != 1 {
+			return ErrPossibleIncorrectAuthor
+		}
+		return nil
 	})
 }
 
@@ -62,7 +84,6 @@ func (dao *GormArticleDao) UpSert(ctx context.Context, art PublishArticle) error
 			"title":   art.Title,
 			"content": art.Content,
 			"utime":   art.Utime,
-			"status":  art.Status,
 		}),
 	}).Create(&art).Error
 	// MySql 最终的语句 Insert xxx On Duplicate key Update xxx   如果发生数据冲突就执行更新
@@ -88,12 +109,11 @@ func (dao *GormArticleDao) UpdateById(ctx context.Context, art Article) error {
 	art.Utime = now
 	//依赖gorm 忽略零值的特性,会根据主键进行跟新 ,可读性很差
 	res := dao.db.WithContext(ctx).Model(&art).
-		//TODO 这样的做法节省了数据库的查询 author_id  ,可读性强,但是每一次更新多的列的时候,你都要修改该
+		//这样的做法节省了数据库的查询 author_id
 		Where("id=? AND author_id=?", art.Id, art.AuthorId).
 		Updates(map[string]any{
 			"title":   art.Title,
 			"content": art.Content,
-			"status":  art.Status,
 			"utime":   art.Utime,
 		})
 	//你要不要检查真的更新了没有
@@ -134,18 +154,4 @@ func (dao *GormArticleDao) Sync(ctx context.Context, art Article) (int64, error)
 
 }
 
-// Article 这是制作库的
-type Article struct {
-	Id int64 `gorm:"primaryKey,autoIncrement"`
-	//长度
-	Title   string `gorm:"type=varchar(1024)"`
-	Content string `gorm:"type=BLOB"`
-	//TODO如何设置索引,在帖子里什么样的查询场景,对于创作者来说,是不是看草稿箱,看到所有自己的文章?产品经理告诉你,要按照创建的时间的倒叙排序
-	//- 在 authorId  和 ctime上创建联合索引
-	//在authorId 上创建索引
-	AuthorId int64 `gorm:"index=aid_ctime"` //创建联合索引 index=aid_ctime
-	Ctime    int64 `gorm:"index=aid_ctime"`
-	Utime    int64
-	//TODO最佳选择就是在author_Id 和 Ctime联合创建联合索引
-	Status uint8
-}
+// Article 这是制作

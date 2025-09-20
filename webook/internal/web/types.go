@@ -1,7 +1,12 @@
 package web
 
-import "github.com/gin-gonic/gin"
+import (
+	"Book_Exp/webook/pkg/ginx"
+
+	"github.com/gin-gonic/gin"
+)
 
 type handler interface {
 	RegisterRoutes(server *gin.Engine)
 }
+type Result = ginx.Result

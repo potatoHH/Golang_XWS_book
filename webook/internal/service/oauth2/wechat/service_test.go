@@ -19,7 +19,7 @@ func Test_service_e2e_VerityCode(t *testing.T) {
 	if !ok {
 		panic("没有找到环境变量 WECHAT_APP_SECRET")
 	}
-	svc := NewService(appId, appKey)
+	svc := NewService(appId, appKey,nil)
 	res, err := svc.VerityCode(context.Background(), "code", "state")
 	require.NoError(t, err)
 	t.Log(res)

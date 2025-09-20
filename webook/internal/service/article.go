@@ -11,15 +11,30 @@ import (
 type ArticleService interface {
 	Publish(ctx context.Context, art domain.Article) (int64, error)
 	PublishV1(ctx context.Context, art domain.Article) (int64, error)
+	Save(ctx context.Context, art domain.Article) (int64, error)
+	Withdraw(ctx context.Context, art domain.Article) error
+	List(ctx context.Context, uid int64, limit int, offset int) ([]domain.Article, error)
+	GetById(ctx context.Context, id int64) (domain.Article, error)
 }
 
 type ArticleServiceV1 struct {
 	repo article.ArticleRepository
-
 	//TODO V1 依赖两个不同的repository 来解决这种跨表, 或者跨库的问题
 	author article.ArticleAuthorRepository
 	reader article.ArticleReaderRepository
 	l      logger.LoggerV1
+}
+
+func (a *ArticleServiceV1) GetById(ctx context.Context, id int64) (domain.Article, error) {
+	return a.repo.GetByID(ctx, id)
+}
+
+func (a *ArticleServiceV1) List(ctx context.Context, uid int64, limit int, offset int) ([]domain.Article, error) {
+	return a.repo.List(ctx, uid, limit, offset)
+}
+
+func (a *ArticleServiceV1) Withdraw(ctx context.Context, art domain.Article) error {
+	return a.repo.SyncStatus(ctx, art.Id, art.Author.Id, domain.ArticleStatusPrivate)
 }
 
 func NewArticleService(repo article.ArticleRepository) ArticleService {
@@ -36,6 +51,7 @@ func NewArticleServiceV1(author article.ArticleAuthorRepository, reader article.
 }
 
 func (a *ArticleServiceV1) Save(ctx context.Context, art domain.Article) (int64, error) {
+	art.Status = domain.ArticleStatusPublished
 	if art.Id > 0 {
 		err := a.repo.Update(ctx, art)
 		return art.Id, err
@@ -44,6 +60,7 @@ func (a *ArticleServiceV1) Save(ctx context.Context, art domain.Article) (int64,
 }
 
 func (a *ArticleServiceV1) Publish(ctx context.Context, art domain.Article) (int64, error) {
+	art.Status = domain.ArticleStatusPublished
 	return a.repo.Sync(ctx, art)
 }
 

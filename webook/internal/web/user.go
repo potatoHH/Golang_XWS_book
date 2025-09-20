@@ -4,6 +4,9 @@ import (
 	"Book_Exp/webook/internal/domain"
 	"Book_Exp/webook/internal/service"
 	ijwt "Book_Exp/webook/internal/web/jwt"
+	"Book_Exp/webook/pkg/ginx"
+	"Book_Exp/webook/pkg/logger"
+	"fmt"
 
 	regexp "github.com/dlclark/regexp2"
 	"github.com/gin-contrib/sessions"
@@ -36,15 +39,17 @@ type UserHandler struct {
 	codeSvc         service.CodeServiceV1
 	ijwt.Handler
 	cmd redis.Cmdable
+	l   logger.LoggerV1
 }
 
-func NewUserHandler(svc service.UserServiceV1, codeSvc service.CodeServiceV1, jwtHandler ijwt.Handler) *UserHandler {
+func NewUserHandler(svc service.UserServiceV1, codeSvc service.CodeServiceV1, jwtHandler ijwt.Handler, l logger.LoggerV1) *UserHandler {
 	return &UserHandler{
 		emilRegxExp:     regexp.MustCompile(emailRegexPattern, regexp.None),
 		passwordRegxExp: regexp.MustCompile(passwordRegexPattern, regexp.None),
 		svc:             svc,
 		codeSvc:         codeSvc,
 		Handler:         jwtHandler,
+		l:               l,
 	}
 }
 
@@ -58,6 +63,10 @@ func (c *UserHandler) RegisterRoutes(server *gin.Engine) { // 注册路由
 	ug.POST("/logout", c.LogOutJWT)
 	ug.POST("/login_sms/code/send", c.SendLoginSmsCode)
 	ug.POST("/refresh_token", c.RefreshToken)
+	ug.POST("/login_sms", ginx.WrapBody[LoginSMSReq](
+		c.l.With(logger.String("method", "login_sms")),
+		c.LoginSms))
+
 }
 
 // 路由接口
@@ -322,53 +331,60 @@ func (c *UserHandler) SendLoginSmsCode(ctx *gin.Context) {
 	}
 
 }
-func (c *UserHandler) LoginSms(ctx *gin.Context) {
-	type Req struct {
-		Phone string `json:"phone"`
-		Code  string `json:"code"`
-	}
-	var req Req
-	if err := ctx.Bind(&req); err != nil {
-		return
-	}
+
+type LoginSMSReq struct {
+	Phone string `json:"phone"`
+	Code  string `json:"code"`
+}
+
+func (c *UserHandler) LoginSms(ctx *gin.Context, req LoginSMSReq) (Result, error) {
 	ok, err := c.codeSvc.Verify(ctx, biz, req.Phone, req.Code)
 	if err != nil {
-		ctx.JSON(http.StatusOK, Result{
+		//	ctx.JSON(http.StatusOK, Result{
+		//		Code: 5,
+		//		Msg:  "系统错误",
+		//	})
+		//	zap.L().Error("用户手机号码登录失败", zap.Error(err))
+		return Result{
 			Code: 5,
 			Msg:  "系统错误",
-		})
-		zap.L().Error("用户手机号码登录失败", zap.Error(err))
-		return
+		}, fmt.Errorf("用户手机号码登录失败")
 	}
 	if !ok {
-		ctx.JSON(http.StatusOK, Result{
+		//ctx.JSON(http.StatusOK, Result{
+		//	Code: 5,
+		//	Msg:  "验证码错误",
+		//})
+		return Result{
 			Code: 5,
 			Msg:  "验证码错误",
-		})
-		return
+		}, nil
 	}
 	//我这个手机号,会不会是一个新用户呢?
 	//
 	user, err := c.svc.FindOrCreate(ctx, req.Phone)
 	if err != nil {
-		ctx.JSON(http.StatusOK, Result{
+		//ctx.JSON(http.StatusOK, Result{
+		//	Code: 5,
+		//	Msg:  "系统错误",
+		//})
+		return Result{
 			Code: 5,
 			Msg:  "系统错误",
-		})
-		return
+		}, fmt.Errorf("系统错误")
 	}
 	//这里怎么办,从哪里来
 	if err = c.SetLoginToken(ctx, user.Id); err != nil {
-		ctx.JSON(http.StatusOK, Result{
+		//ctx.JSON(http.StatusOK, Result{
+		//	Code: 5,
+		//	Msg:  "系统错误",
+		//})
+		return Result{
 			Code: 5,
 			Msg:  "系统错误",
-		})
-		return
+		}, fmt.Errorf("系统错误")
 	}
-	ctx.JSON(http.StatusOK, Result{
-		Code: 4,
-		Msg:  "验证码校验成功",
-	})
+	return Result{Msg: "登录成功"}, nil
 
 }
 
