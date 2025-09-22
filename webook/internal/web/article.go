@@ -18,13 +18,16 @@ import (
 var _ handler = (*ArticleHandler)(nil)
 
 type ArticleHandler struct {
-	svc service.ArticleService
-	l   logger.LoggerV1
+	svc     service.ArticleService
+	l       logger.LoggerV1
+	intrSvc service.InteractiveService
+	biz     string
 }
 
 func NewArticleHandler(svc service.ArticleService, l logger.LoggerV1) *ArticleHandler {
 	return &ArticleHandler{
 		svc: svc,
+		biz: "article",
 	}
 }
 
@@ -34,11 +37,28 @@ func (a *ArticleHandler) RegisterRoutes(g *gin.Engine) {
 	g.POST("/edit", a.Edit)
 	g.POST("/publish", a.Publish)
 	g.POST("/withdraw", a.Withdraw)
-	g.POST("list", ginx.WrapBodyAndToken[ListReq, ijwt.UserClaims](a.List))
-	g.GET("/detail/:id", ginx.WrapToken[ijwt.UserClaims](a.Detail))
+	pub := g.Group("/pub")
+	pub.POST("list", ginx.WrapBodyAndToken[ListReq, ijwt.UserClaims](a.List))
+	pub.GET("/detail/:id", ginx.WrapToken[ijwt.UserClaims](a.Detail))
+	pub.POST("/like", ginx.WrapBodyAndToken[LikeReq, ijwt.UserClaims](a.Like))
+	pub.POST("/cancel_like", ginx.WrapBodyAndToken[LikeReq, ijwt.UserClaims](a.Like))
 
 }
 
+func (a *ArticleHandler) Like(ctx *gin.Context, req LikeReq, uc ijwt.UserClaims) (ginx.Result, error) {
+	var err error
+	if req.Like {
+		err = a.svc.Like(ctx, a.biz, req.Id, uc.Uid)
+	} else {
+		err = a.svc.CancleLike(ctx, a.biz, req.Id, uc.Uid)
+	}
+	if err != nil {
+		return ginx.Result{Code: 5, Msg: "系统错误"}, err
+	}
+	return ginx.Result{Msg: "OK"}, nil
+}
+
+// 文章详情
 func (a *ArticleHandler) Detail(ctx *gin.Context, usr ijwt.UserClaims) (ginx.Result, error) {
 	idstr := ctx.Param("id")
 	id, err := strconv.ParseInt(idstr, 10, 64)
@@ -59,6 +79,19 @@ func (a *ArticleHandler) Detail(ctx *gin.Context, usr ijwt.UserClaims) (ginx.Res
 		return ginx.Result{Code: 4, Msg: "输入有误"}, nil
 
 	}
+
+	//TODO 增加阅读计数,这个功能 是不是可以让前端,主动刚发一个http请求 来增加一个计数
+	go func() {
+		//TODO 这里可以增加一个计数  go func  异步去执行
+		er := a.intrSvc.IncrReadCnt(ctx, biz, art.Id)
+		if er != nil {
+			a.l.Error("增加阅读计数失败",
+				logger.Error(err),
+				logger.Int64("aid", art.Id),
+			)
+		}
+	}()
+
 	//这里不是借助数据库来判定的方法
 	return ginx.Result{
 		Data: ArtcleVO{

@@ -4,6 +4,22 @@ import "Book_Exp/webook/internal/domain"
 
 //对标前端
 
+type RewardReq struct {
+	Id  int64 `json:"id"`
+	Amt int64 `json:"amt"`
+}
+
+// TODO 点赞和取消点赞准备复用这个
+type LikeReq struct {
+	Id   int64 `json:"id"`
+	Like bool  `json:"like"`
+}
+
+type CollectReq struct {
+	Id  int64 `json:"id"`
+	Cid int64 `json:"cid"`
+}
+
 type ArtcleVO struct {
 	Title string `josn:"title"`
 	//内容

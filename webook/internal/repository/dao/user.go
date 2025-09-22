@@ -89,6 +89,7 @@ type User struct {
 	Password string
 	Ctime    int64 // 创建时间
 	Utime    int64 //更新时间
+	Nickname string
 	//微信的字段
 	WechatUnionId sql.NullString
 	WechatOpenId  sql.NullString `gorm:"unique"`

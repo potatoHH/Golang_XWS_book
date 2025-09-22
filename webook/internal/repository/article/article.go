@@ -2,15 +2,14 @@ package article
 
 import (
 	"Book_Exp/webook/internal/domain"
+	"Book_Exp/webook/internal/repository"
 	"Book_Exp/webook/internal/repository/cache"
+	"Book_Exp/webook/internal/repository/dao/article"
 	"Book_Exp/webook/pkg/logger"
+	"context"
 	"time"
 
-	"Book_Exp/webook/internal/repository/dao/article"
-	"context"
-
 	"github.com/ecodeclub/ekit/slice"
-	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
 
@@ -25,9 +24,13 @@ type ArticleRepository interface {
 	SyncStatus(ctx context.Context, id int64, author int64, status domain.ArticleStatus) error
 	List(ctx context.Context, uid int64, limit int, offset int) ([]domain.Article, error)
 	GetByID(ctx context.Context, id int64) (domain.Article, error)
+	GetPublishedById(ctx context.Context, id int64) (domain.Article, error)
+	IncrLike(ctx context.Context, biz string, bizId int64, uid int64) error
+	DecrLike(ctx context.Context, biz string, bizId int64, uid int64) error
 }
 type CacheArticleRepostiory struct {
-	dao article.ArticleDAO
+	dao      article.ArticleDAO
+	userRepo repository.UserRepository
 	//耦合了DAO 操作的东西,
 	//正常情况下,如果你要在reposiotry 层面上操作事务
 	//那么这就是能利用db开始事务之后,创建基于事务的DAO
@@ -40,6 +43,45 @@ type CacheArticleRepostiory struct {
 	l         logger.LoggerV1
 }
 
+func (c *CacheArticleRepostiory) DecrLike(ctx context.Context, biz string, bizId int64, uid int64) error {
+	err := c.dao.DeleteLikeInfo(ctx, biz, bizId, uid)
+	if err != nil {
+		return err
+	}
+	return c.cache.DecrLikeCntPresent(ctx, biz, bizId)
+}
+
+func (c *CacheArticleRepostiory) IncrLike(ctx context.Context, biz string, bizId int64, uid int64) error {
+	err := c.dao.InsertLikeInfo(ctx, biz, bizId, uid)
+	if err != nil {
+		return err
+	}
+	return c.cache.IncrLikeCntPresent(ctx, biz, bizId)
+}
+
+func (c *CacheArticleRepostiory) GetPublishedById(ctx context.Context, id int64) (domain.Article, error) {
+	//读取线上库数据,如果你的content 被你放过去了 oss上,你就要让前端去读content字段
+	art, err := c.dao.GetPubById(ctx, id)
+	if err != nil {
+		return domain.Article{}, err
+	}
+	//这边要组装user,适合单体应用
+	usr, err := c.userRepo.FindById(ctx, art.AuthorId)
+	res := domain.Article{
+		Id:      art.Id,
+		Title:   art.Title,
+		Status:  domain.ArticleStatus(art.Status),
+		Content: art.Content,
+		Author: domain.Author{
+			Id:   usr.Id,
+			Name: usr.Nickname,
+		},
+		Ctime: time.UnixMilli(art.Ctime),
+		Utime: time.UnixMilli(art.Utime),
+	}
+	return res, nil
+
+}
 func (c *CacheArticleRepostiory) GetByID(ctx context.Context, id int64) (domain.Article, error) {
 	data, err := c.dao.GetByID(ctx, id)
 	if err != nil {
@@ -79,7 +121,7 @@ func (c *CacheArticleRepostiory) List(ctx context.Context, uid int64, limit int,
 	go func() {
 		err := c.cache.SetFirstPage(ctx, uid, data)
 		c.l.Error("回写缓存失败", logger.Error(err))
-		c.PreCache(data)
+		c.PreCache(ctx, data)
 	}()
 	return data, err
 
@@ -96,10 +138,16 @@ func NewArticleRepostior(dao article.ArticleDAO) ArticleRepository {
 }
 func (c *CacheArticleRepostiory) Sync(ctx context.Context, art domain.Article) (int64, error) {
 	//TODO 清空缓存
-	defer func() {
+	id, err := c.dao.Sync(ctx, c.toEntity(art))
+	if err == nil {
+		//提前缓存好线上库数据
 		c.cache.DelFirstPage(ctx, art.Author.Id)
-	}()
-	return c.dao.Sync(ctx, c.toEntity(art))
+		c.cache.SetPub(ctx, art)
+		if err != nil {
+			c.l.Error("提前设置缓存失败", logger.Int64("author", art.Author.Id), logger.Error(err))
+		}
+	}
+	return id, err
 
 }
 
@@ -206,7 +254,9 @@ func (repo *CacheArticleRepostiory) ToDomain(art article.Article) domain.Article
 
 // TODO 提前预加载缓存
 func (c *CacheArticleRepostiory) PreCache(ctx context.Context, data []domain.Article) {
-	if len(data) > 0 {
+	const contentSizeThreshold = 1024 * 1024
+	if len(data) > 0 && len(data[0].Content) < contentSizeThreshold {
+		//你也可以记录日志
 		if err := c.cache.Set(ctx, data[0].Id); err != nil {
 			c.l.Error("提前准备缓存失败", logger.Error(err))
 		}

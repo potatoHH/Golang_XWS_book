@@ -122,7 +122,7 @@ func (o *S3DAO) SyncStatus(ctx context.Context, author, id int64, status uint8) 
 	//if status == statusPrivate {
 	//	_, err = o.oss.DeleteObjectWithContext(ctx, &s3.DeleteObjectInput{
 	//		Bucket: o.bucket,
-	//		Key:    ekit.ToPtr[string](strconv.FormatInt(id, 10)),
+	//		fitstPageKey:    ekit.ToPtr[string](strconv.FormatInt(id, 10)),
 	//	})
 	//}
 	return err
