@@ -25,8 +25,8 @@ type ArticleRepository interface {
 	List(ctx context.Context, uid int64, limit int, offset int) ([]domain.Article, error)
 	GetByID(ctx context.Context, id int64) (domain.Article, error)
 	GetPublishedById(ctx context.Context, id int64) (domain.Article, error)
-	IncrLike(ctx context.Context, biz string, bizId int64, uid int64) error
-	DecrLike(ctx context.Context, biz string, bizId int64, uid int64) error
+
+	//收藏
 }
 type CacheArticleRepostiory struct {
 	dao      article.ArticleDAO
@@ -41,22 +41,6 @@ type CacheArticleRepostiory struct {
 	authorDao article.ArticleAuthorDAO
 	readerDao article.ArticleReaderDAO
 	l         logger.LoggerV1
-}
-
-func (c *CacheArticleRepostiory) DecrLike(ctx context.Context, biz string, bizId int64, uid int64) error {
-	err := c.dao.DeleteLikeInfo(ctx, biz, bizId, uid)
-	if err != nil {
-		return err
-	}
-	return c.cache.DecrLikeCntPresent(ctx, biz, bizId)
-}
-
-func (c *CacheArticleRepostiory) IncrLike(ctx context.Context, biz string, bizId int64, uid int64) error {
-	err := c.dao.InsertLikeInfo(ctx, biz, bizId, uid)
-	if err != nil {
-		return err
-	}
-	return c.cache.IncrLikeCntPresent(ctx, biz, bizId)
 }
 
 func (c *CacheArticleRepostiory) GetPublishedById(ctx context.Context, id int64) (domain.Article, error) {

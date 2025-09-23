@@ -15,8 +15,6 @@ type ArticleService interface {
 	Withdraw(ctx context.Context, art domain.Article) error
 	List(ctx context.Context, uid int64, limit int, offset int) ([]domain.Article, error)
 	GetById(ctx context.Context, id int64) (domain.Article, error)
-	Like(ctx context.Context, biz string, bizId int64, uid int64) error
-	CancleLike(ctx context.Context, biz string, bizId int64, uid int64) error
 }
 
 type ArticleServiceV1 struct {
@@ -25,14 +23,6 @@ type ArticleServiceV1 struct {
 	author article.ArticleAuthorRepository
 	reader article.ArticleReaderRepository
 	l      logger.LoggerV1
-}
-
-func (a *ArticleServiceV1) CancleLike(ctx context.Context, biz string, bizId int64, uid int64) error {
-	return a.repo.DecrLike(ctx, biz, bizId, uid)
-}
-
-func (a *ArticleServiceV1) Like(ctx context.Context, biz string, bizId int64, uid int64) error {
-	return a.repo.IncrLike(ctx, biz, bizId, uid)
 }
 
 func (a *ArticleServiceV1) GetById(ctx context.Context, id int64) (domain.Article, error) {

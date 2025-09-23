@@ -40,17 +40,28 @@ func (a *ArticleHandler) RegisterRoutes(g *gin.Engine) {
 	pub := g.Group("/pub")
 	pub.POST("list", ginx.WrapBodyAndToken[ListReq, ijwt.UserClaims](a.List))
 	pub.GET("/detail/:id", ginx.WrapToken[ijwt.UserClaims](a.Detail))
+	//点赞
 	pub.POST("/like", ginx.WrapBodyAndToken[LikeReq, ijwt.UserClaims](a.Like))
 	pub.POST("/cancel_like", ginx.WrapBodyAndToken[LikeReq, ijwt.UserClaims](a.Like))
+	//收藏
+	pub.POST("/collect", ginx.WrapClaimsAndReq[CollectReq](a.Collect))
 
+}
+
+func (a *ArticleHandler) Collect(ctx *gin.Context, req CollectReq, uc ijwt.UserClaims) (ginx.Result, error) {
+	err := a.intrSvc.CancleLike(ctx, a.biz, req.Id, uc.Uid)
+	if err != nil {
+		return ginx.Result{Code: 5, Msg: "系统错误"}, err
+	}
+	return ginx.Result{Msg: "OK"}, nil
 }
 
 func (a *ArticleHandler) Like(ctx *gin.Context, req LikeReq, uc ijwt.UserClaims) (ginx.Result, error) {
 	var err error
 	if req.Like {
-		err = a.svc.Like(ctx, a.biz, req.Id, uc.Uid)
+		err = a.intrSvc.Like(ctx, a.biz, req.Id, uc.Uid)
 	} else {
-		err = a.svc.CancleLike(ctx, a.biz, req.Id, uc.Uid)
+		err = a.intrSvc.CancleLike(ctx, a.biz, req.Id, uc.Uid)
 	}
 	if err != nil {
 		return ginx.Result{Code: 5, Msg: "系统错误"}, err

@@ -19,6 +19,7 @@ type ArticleCache interface {
 	// SetPub 正常来说看,创作者和读者的Reids 集成要分开,因为读者是一个核心中的核心
 	SetPub(ctx context.Context, article domain.Article) error
 	GetPub(ctx context.Context, id int64) (domain.Article, error)
+	//点赞
 	IncrLikeCntPresent(ctx context.Context, biz string, id int64) error
 	DecrLikeCntPresent(ctx context.Context, biz string, id int64) error
 }

@@ -18,11 +18,17 @@ type ArticleDAO interface {
 	GetByAuthor(ctx context.Context, uid int64, limit int, offset int) ([]Article, error)
 	GetByID(ctx context.Context, id int64) (Article, error)
 	GetPubById(ctx context.Context, id int64) (Article, error)
+	//点赞
 	InsertLikeInfo(ctx context.Context, biz string, id int64, uid int64) error
 	DeleteLikeInfo(ctx context.Context, biz string, id int64, uid int64) error
 }
 type GormArticleDao struct {
 	db *gorm.DB
+}
+
+func (dao *GormArticleDao) DeleteLikeInfo(ctx context.Context, biz string, id int64, uid int64) error {
+	//TODO implement me
+	panic("implement me")
 }
 
 func (dao *GormArticleDao) GetPubById(ctx context.Context, id int64) (Article, error) {

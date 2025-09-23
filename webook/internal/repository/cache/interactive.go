@@ -12,6 +12,8 @@ import (
 type RedisInteractiveCache interface {
 	IncrReadCnt(ctx context.Context, biz string, bizId int64) error
 	IncrReadCntPresent(ctx context.Context, biz string, bizId int64) error
+	DecrLikeCntPresent(ctx context.Context, biz string, id int64) error
+	IncrLikeCntPresent(ctx context.Context, biz string, id int64) error
 }
 
 var (
@@ -28,6 +30,16 @@ const (
 type RedisInteractive struct {
 	client     redis.Cmdable
 	expiration time.Duration
+}
+
+func (r *RedisInteractive) DecrLikeCntPresent(ctx context.Context, biz string, id int64) error {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (r *RedisInteractive) IncrLikeCntPresent(ctx context.Context, biz string, id int64) error {
+	//TODO implement me
+	panic("implement me")
 }
 
 func NewRedisInteractiveCache(client redis.Cmdable) RedisInteractiveCache {

@@ -6,26 +6,44 @@ import (
 	"context"
 )
 
-type InteractiveService interface {
-	IncrReadCnt(ctx context.Context, biz string, bizId int64) error
-}
+type CacheReadReopsitory interface {
+	//点赞
+	IncrLike(ctx context.Context, biz string, bizId int64, uid int64) error
+	DecrLike(ctx context.Context, biz string, bizId int64, uid int64) error
+	//收藏
 
-type InteractiveServiceV1 struct {
+}
+type CachedReadRepository struct {
 	dao   dao.InteractiveDAO
 	cache cache.RedisInteractiveCache
 }
 
-func (i InteractiveServiceV1) IncrReadCnt(ctx context.Context, biz string, bizId int64) error {
+func (c *CachedReadRepository) IncrReadCnt(ctx context.Context, biz string, bizId int64) error {
 	//要考虑缓存方案
-	err := i.dao.IncrReadCnt(ctx, biz, bizId)
+	err := c.dao.IncrReadCnt(ctx, biz, bizId)
 	if err != nil {
 		return err
 	}
 	//这边会有部分数据失败引发的一些不一致问题,但是你其实不需要解决
 	//因为阅读数不准确是完全没问题的
-	return i.cache.IncrReadCnt(ctx, biz, bizId)
+	return c.cache.IncrReadCnt(ctx, biz, bizId)
 }
 
-func NewInteractiveService() InteractiveService {
-	return &InteractiveServiceV1{}
+func NewInteractiveService() CacheReadReopsitory {
+	return &CachedReadRepository{}
+}
+func (c *CachedReadRepository) DecrLike(ctx context.Context, biz string, bizId int64, uid int64) error {
+	err := c.dao.DeleteLikeInfo(ctx, biz, bizId, uid)
+	if err != nil {
+		return err
+	}
+	return c.cache.DecrLikeCntPresent(ctx, biz, bizId)
+}
+
+func (c *CachedReadRepository) IncrLike(ctx context.Context, biz string, bizId int64, uid int64) error {
+	err := c.dao.InsertLikeInfo(ctx, biz, bizId, uid)
+	if err != nil {
+		return err
+	}
+	return c.cache.IncrLikeCntPresent(ctx, biz, bizId)
 }
