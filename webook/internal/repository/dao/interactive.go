@@ -8,14 +8,65 @@ import (
 	"gorm.io/gorm/clause"
 )
 
+var (
+	ErrRecordNotFound = gorm.ErrRecordNotFound
+)
+
 type InteractiveDAO interface {
-	IncrReadCnt(ctx context.Context, biz string, id int64) error
+	//点赞
 	DeleteLikeInfo(ctx context.Context, biz string, id int64, uid int64) error
 	InsertLikeInfo(ctx context.Context, biz string, id int64, uid int64) error
+	//收藏
+	IncrReadCnt(ctx context.Context, biz string, id int64) error
+	InsertCollectionBiz(ctx context.Context, biz UserCollectionBiz) error
+	Get(ctx context.Context, biz string, id int64) (Interactive, error)
+	GetLikeInfo(ctx context.Context, biz string, id int64, uid int64) (UserLikeBiz, error)
+	GetCollectInfo(ctx context.Context, biz string, id int64, uid int64) (UserCollectionBiz, error)
 }
 
 type GormInteractiveDAO struct {
 	db *gorm.DB
+}
+
+func (dao *GormInteractiveDAO) GetLikeInfo(ctx context.Context, biz string, id int64, uid int64) (UserLikeBiz, error) {
+	var res UserLikeBiz
+	err := dao.db.WithContext(ctx).Where("biz = ? and biz_id = ? and uid = ? and status = ?", biz, id, uid, 1).First(&res).Error
+	return res, err
+}
+func (dao *GormInteractiveDAO) GetCollectInfo(ctx context.Context, biz string, bizId, uid int64) (UserCollectionBiz, error) {
+	var res UserCollectionBiz
+	err := dao.db.WithContext(ctx).Where("biz = ? and biz_id = ? and uid = ? and status = ?", biz, bizId, uid, 1).First(&res).Error
+	return res, err
+}
+
+func (dao *GormInteractiveDAO) Get(ctx context.Context, biz string, id int64) (Interactive, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (dao *GormInteractiveDAO) InsertCollectionBiz(ctx context.Context, cb UserCollectionBiz) error {
+	now := time.Now().UnixMilli()
+	cb.Utime = now
+	cb.Ctime = now
+	return dao.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		//插入收藏项目
+		err := dao.db.WithContext(ctx).Create(&cb).Error
+		if err != nil {
+			return err
+		}
+		return tx.Clauses(clause.OnConflict{
+			DoUpdates: clause.Assignments(map[string]any{
+				"collect_cnt": gorm.Expr("collect_cnt + 1"),
+			}),
+		}).Create(&Interactive{
+			CollectCnt: 1,
+			Ctime:      now,
+			Utime:      now,
+			Biz:        cb.Biz,
+			BizId:      cb.BizId,
+		}).Error
+	})
+
 }
 
 func (dao *GormInteractiveDAO) DeleteLikeInfo(ctx context.Context, biz string, bizId int64, uid int64) error {
@@ -128,3 +179,28 @@ type UserLikeBiz struct {
 //TODO  Interactive 正常来说,一张主表和其他表的关联关系的表会公用一个DAO ,所以我们就用过一个DAO 来操作 加入说我要查找点赞量前面100
 //TODO 实时查找,性能贼查, 高性能,我不要求准确性 面试标准答案用zset,但是不够有特色,烂大街了,你可以考虑 1.定时计算 1.1 定时计算+ 本地缓存
 //TODO 2. 优化版zset,定时筛选 zset + 实时 zset计算
+
+// Collection 收藏夹
+type Collection struct {
+	Id   int64  `gorm:"primaryKey,autoIncrement"`
+	Name string `gorm:"type=varchar(1024)"`
+	Uid  int64  `gorm:""`
+
+	Ctime int64
+	Utime int64
+}
+
+// UserCollectionBiz 收藏的东西
+type UserCollectionBiz struct {
+	Id int64 `gorm:"primaryKey,autoIncrement"`
+	// 收藏夹 ID
+	// 作为关联关系中的外键，我们这里需要索引
+	Cid   int64  `gorm:"index"`
+	BizId int64  `gorm:"uniqueIndex:biz_type_id_uid"`
+	Biz   string `gorm:"type:varchar(128);uniqueIndex:biz_type_id_uid"`
+	// 这算是一个冗余，因为正常来说，
+	// 只需要在 Collection 中维持住 Uid 就可以
+	Uid   int64 `gorm:"uniqueIndex:biz_type_id_uid"`
+	Ctime int64
+	Utime int64
+}

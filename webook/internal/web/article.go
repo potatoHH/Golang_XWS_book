@@ -6,13 +6,13 @@ import (
 	ijwt "Book_Exp/webook/internal/web/jwt"
 	"Book_Exp/webook/pkg/ginx"
 	"Book_Exp/webook/pkg/logger"
-	"fmt"
 	"net/http"
 	"strconv"
 	"time"
 
 	"github.com/ecodeclub/ekit/slice"
 	"github.com/gin-gonic/gin"
+	"golang.org/x/sync/errgroup"
 )
 
 var _ handler = (*ArticleHandler)(nil)
@@ -44,12 +44,12 @@ func (a *ArticleHandler) RegisterRoutes(g *gin.Engine) {
 	pub.POST("/like", ginx.WrapBodyAndToken[LikeReq, ijwt.UserClaims](a.Like))
 	pub.POST("/cancel_like", ginx.WrapBodyAndToken[LikeReq, ijwt.UserClaims](a.Like))
 	//收藏
-	pub.POST("/collect", ginx.WrapClaimsAndReq[CollectReq](a.Collect))
+	//pub.POST("/collect", ginx.WrapClaimsAndReq[CollectReq](a.Collect))
 
 }
 
 func (a *ArticleHandler) Collect(ctx *gin.Context, req CollectReq, uc ijwt.UserClaims) (ginx.Result, error) {
-	err := a.intrSvc.CancleLike(ctx, a.biz, req.Id, uc.Uid)
+	err := a.intrSvc.Collect(ctx, a.biz, uc.Uid, req.Cid, req.Id)
 	if err != nil {
 		return ginx.Result{Code: 5, Msg: "系统错误"}, err
 	}
@@ -78,19 +78,40 @@ func (a *ArticleHandler) Detail(ctx *gin.Context, usr ijwt.UserClaims) (ginx.Res
 		//	a.l.Error("前端输入的ID不对", logger.Error(err))
 		return ginx.Result{Code: 4, Msg: "参数错误"}, err
 	}
-	art, err := a.svc.GetById(ctx, id)
+
+	var eg errgroup.Group
+	var art domain.Article
+	eg.Go(func() error {
+		uc := ctx.MustGet("users").(ijwt.UserClaims)
+		art, err = a.svc.GetById(ctx, id, uc.Uid)
+		return err
+	})
+
+	//这是不借助数据查询来判定的方法
+	//if art.Author.Id != usr.Uid {
+	//	//ctx.JSON(200, ginx.Result{Code: 4, Msg: "输入有误"})
+	//	//如果公司有风控系统,这个时候就要上报这种非法访问的用户了
+	//	a.l.Error("非法访问文章,创作者ID 不匹配", logger.Int64("uid", usr.Uid))
+	//	return ginx.Result{Code: 4, Msg: "输入有误"}, nil
+
+	//}
+	//TODO  在这里获取文章的计数功能
+	var intr domain.Interactive
+	eg.Go(func() error {
+		uc := ctx.MustGet("users").(ijwt.UserClaims)
+		intr, err = a.intrSvc.Get(ctx, a.biz, id, uc.Uid)
+		if err != nil {
+			//容忍错误的写法不返回 return
+			a.l.Error("获取文章信息失败", logger.Error(err))
+			//return ginx.Result{Code: 5, Msg: "系统错误"}, err
+		}
+		return err
+	})
+	//在这里等,要保证前面两个
+	err = eg.Wait()
 	if err != nil {
 		return ginx.Result{Code: 5, Msg: "系统错误"}, err
 	}
-	//这是不借助数据查询来判定的方法
-	if art.Author.Id != usr.Uid {
-		//ctx.JSON(200, ginx.Result{Code: 4, Msg: "输入有误"})
-		//如果公司有风控系统,这个时候就要上报这种非法访问的用户了
-		a.l.Error("非法访问文章,创作者ID 不匹配", logger.Int64("uid", usr.Uid))
-		return ginx.Result{Code: 4, Msg: "输入有误"}, nil
-
-	}
-
 	//TODO 增加阅读计数,这个功能 是不是可以让前端,主动刚发一个http请求 来增加一个计数
 	go func() {
 		//TODO 这里可以增加一个计数  go func  异步去执行
@@ -102,7 +123,6 @@ func (a *ArticleHandler) Detail(ctx *gin.Context, usr ijwt.UserClaims) (ginx.Res
 			)
 		}
 	}()
-
 	//这里不是借助数据库来判定的方法
 	return ginx.Result{
 		Data: ArtcleVO{
@@ -111,11 +131,16 @@ func (a *ArticleHandler) Detail(ctx *gin.Context, usr ijwt.UserClaims) (ginx.Res
 			Abstract: art.Abstrract(),
 			//Content:  art.Content,
 			//Author:   art.Author,
-			Status: art.Status.ToUnit8(),
-			Ctime:  art.Ctime.Format(time.DateTime),
-			Utime:  art.Utime.Format(time.DateTime),
+			Status:     art.Status.ToUnit8(),
+			Ctime:      art.Ctime.Format(time.DateTime),
+			Utime:      art.Utime.Format(time.DateTime),
+			Liked:      intr.Liked,
+			Collected:  intr.Collected,
+			CollentCnt: intr.CollectCnt,
+			LikeCnt:    intr.LikeCnt,
+			ReadCnt:    intr.ReadCnt,
 		},
-	}, fmt.Errorf("非法访问文章,创作者ID不匹配%d", usr.Uid)
+	}, nil
 
 }
 

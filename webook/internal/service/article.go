@@ -2,6 +2,7 @@ package service
 
 import (
 	"Book_Exp/webook/internal/domain"
+	events "Book_Exp/webook/internal/events/article"
 	"Book_Exp/webook/internal/repository/article"
 	"Book_Exp/webook/pkg/logger"
 	"context"
@@ -14,19 +15,36 @@ type ArticleService interface {
 	Save(ctx context.Context, art domain.Article) (int64, error)
 	Withdraw(ctx context.Context, art domain.Article) error
 	List(ctx context.Context, uid int64, limit int, offset int) ([]domain.Article, error)
-	GetById(ctx context.Context, id int64) (domain.Article, error)
+	GetById(ctx context.Context, id, uid int64) (domain.Article, error)
 }
 
 type ArticleServiceV1 struct {
 	repo article.ArticleRepository
 	//TODO V1 依赖两个不同的repository 来解决这种跨表, 或者跨库的问题
-	author article.ArticleAuthorRepository
-	reader article.ArticleReaderRepository
-	l      logger.LoggerV1
+	author   article.ArticleAuthorRepository
+	reader   article.ArticleReaderRepository
+	l        logger.LoggerV1
+	producer events.Producer
 }
 
-func (a *ArticleServiceV1) GetById(ctx context.Context, id int64) (domain.Article, error) {
-	return a.repo.GetByID(ctx, id)
+func (a *ArticleServiceV1) GetById(ctx context.Context, id, uid int64) (domain.Article, error) {
+	//另一个选项,在这里组装Author ,调用UserService
+	art, err := a.repo.GetByID(ctx, id)
+	if err == nil {
+		go func() {
+			er := a.producer.ProduceReadEvent(ctx, events.ReadEvent{
+				//TODO 即便你的消费者要用art里面的数据,让他去查询,你不要在event里面带
+				Aid: id,
+				Uid: uid,
+			})
+			if er != nil {
+				a.l.Error("发送事件失败",
+					logger.Error(er),
+				)
+			}
+		}()
+	}
+	return art, err
 }
 
 func (a *ArticleServiceV1) List(ctx context.Context, uid int64, limit int, offset int) ([]domain.Article, error) {
@@ -37,9 +55,11 @@ func (a *ArticleServiceV1) Withdraw(ctx context.Context, art domain.Article) err
 	return a.repo.SyncStatus(ctx, art.Id, art.Author.Id, domain.ArticleStatusPrivate)
 }
 
-func NewArticleService(repo article.ArticleRepository) ArticleService {
+func NewArticleService(repo article.ArticleRepository, producer events.Producer, l logger.LoggerV1) ArticleService {
 	return &ArticleServiceV1{
-		repo: repo,
+		repo:     repo,
+		producer: producer,
+		l:        l,
 	}
 }
 func NewArticleServiceV1(author article.ArticleAuthorRepository, reader article.ArticleReaderRepository, l logger.LoggerV1) ArticleService {

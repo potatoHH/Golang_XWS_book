@@ -20,10 +20,18 @@ type ArticleAuthorDAO interface {
 	GetPubById(ctx context.Context, id int64) (PublishedArticle, error)
 	Sync(ctx context.Context, art Article) (int64, error)
 	SyncStatus(ctx context.Context, author, id int64, status uint8) error
+	UpSert(ctx context.Context, article PublishArticle) error
 }
 
 type GORMArticleDAO struct {
 	db *gorm.DB
+}
+
+func NewGORMArticleDAO(db *gorm.DB) ArticleAuthorDAO {
+	return &GORMArticleDAO{
+		db: db,
+	}
+
 }
 
 func (dao *GORMArticleDAO) UpSert(ctx context.Context, art PublishArticle) error {
@@ -56,12 +64,6 @@ func (dao *GORMArticleDAO) GetById(ctx context.Context, id int64) (Article, erro
 		Where("id = ?", id).
 		First(&art).Error
 	return art, err
-}
-
-func NewGORMArticleDAO(db *gorm.DB) ArticleDAO {
-	return &GORMArticleDAO{
-		db: db,
-	}
 }
 
 func (dao *GORMArticleDAO) SyncStatus(ctx context.Context, author, id int64, status uint8) error {

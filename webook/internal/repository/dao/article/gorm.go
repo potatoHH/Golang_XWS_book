@@ -26,6 +26,12 @@ type GormArticleDao struct {
 	db *gorm.DB
 }
 
+func NewGromArticleDao(db *gorm.DB) ArticleDAO {
+	return &GormArticleDao{
+		db: db,
+	}
+}
+
 func (dao *GormArticleDao) DeleteLikeInfo(ctx context.Context, biz string, id int64, uid int64) error {
 	//TODO implement me
 	panic("implement me")

@@ -1,12 +1,23 @@
 package main
 
 import (
+	"github.com/gin-gonic/gin"
 	"github.com/spf13/viper"
 )
 
 func main() {
 	initViperV1()
-	server := InitWebServer()
+	app := InitWebServer()
+	for _, c := range app.consumer {
+		err := c.Start()
+		if err != nil {
+			panic(err)
+		}
+	}
+	server := app.server
+	server.GET("/hello", func(ctx *gin.Context) {
+		ctx.String(200, "hello")
+	})
 	server.Run("127.0.0.1:8080")
 
 }

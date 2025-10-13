@@ -1,6 +1,7 @@
 package cache
 
 import (
+	"Book_Exp/webook/internal/domain"
 	"context"
 	_ "embed"
 	"fmt"
@@ -14,6 +15,9 @@ type RedisInteractiveCache interface {
 	IncrReadCntPresent(ctx context.Context, biz string, bizId int64) error
 	DecrLikeCntPresent(ctx context.Context, biz string, id int64) error
 	IncrLikeCntPresent(ctx context.Context, biz string, id int64) error
+	IncrCollectCntIfPresent(ctx context.Context, biz string, id int64) error
+	Get(ctx context.Context, biz string, id int64) (domain.Interactive, error)
+	Set(ctx context.Context, biz string, id int64, res domain.Interactive) error
 }
 
 var (
@@ -30,6 +34,21 @@ const (
 type RedisInteractive struct {
 	client     redis.Cmdable
 	expiration time.Duration
+}
+
+func (r *RedisInteractive) Set(ctx context.Context, biz string, id int64, res domain.Interactive) error {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (r *RedisInteractive) Get(ctx context.Context, biz string, id int64) (domain.Interactive, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (r *RedisInteractive) IncrCollectCntIfPresent(ctx context.Context, biz string, bizId int64) error {
+	//TODO implement me
+	panic("implement me")
 }
 
 func (r *RedisInteractive) DecrLikeCntPresent(ctx context.Context, biz string, id int64) error {

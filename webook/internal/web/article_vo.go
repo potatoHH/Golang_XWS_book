@@ -32,6 +32,13 @@ type ArtcleVO struct {
 	Status uint8  `json:"status"`
 	Ctime  string `json:"ctime"`
 	Utime  string `json:"utime"`
+	//计数
+	LikeCnt    int64 `json:"like_cnt"`
+	ReadCnt    int64 `json:"read_cnt"`
+	CollentCnt int64 `json:"collent_cnt"`
+	//我个人有没有点过赞,和收藏
+	Liked     bool `json:"liked"`
+	Collected bool `json:"collected"`
 }
 
 type ListReq struct {

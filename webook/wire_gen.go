@@ -7,20 +7,21 @@
 package main
 
 import (
+	article3 "Book_Exp/webook/internal/events/article"
 	"Book_Exp/webook/internal/repository"
+	article2 "Book_Exp/webook/internal/repository/article"
 	"Book_Exp/webook/internal/repository/cache"
 	"Book_Exp/webook/internal/repository/dao"
+	"Book_Exp/webook/internal/repository/dao/article"
 	"Book_Exp/webook/internal/service"
 	"Book_Exp/webook/internal/web"
 	"Book_Exp/webook/internal/web/jwt"
 	"Book_Exp/webook/ioc"
-
-	"github.com/gin-gonic/gin"
 )
 
 // Injectors from wire.go:
 
-func InitWebServer() *gin.Engine {
+func InitWebServer() *App {
 	cmdable := ioc.InitRedis()
 	handler := jwt.NewRedisJWTHandler(cmdable)
 	loggerV1 := ioc.InitLogger()
@@ -34,10 +35,26 @@ func InitWebServer() *gin.Engine {
 	codeRepository := repository.NewCodeRepository(codeCache)
 	smsService := ioc.InitSmsService(cmdable)
 	codeServiceV1 := service.NewCodeService(codeRepository, smsService)
-	userHandler := web.NewUserHandler(userServiceV1, codeServiceV1, handler)
+	userHandler := web.NewUserHandler(userServiceV1, codeServiceV1, handler, loggerV1)
 	wechatService := ioc.InitOAuth2WechatHandler(loggerV1)
 	wechatHandlerConfig := ioc.NewWechatHandler()
 	oAuth2WechatHandler := web.NewOAuth2WechatHandler(wechatService, userServiceV1, wechatHandlerConfig, handler)
-	engine := ioc.InitGin(v, userHandler, oAuth2WechatHandler)
-	return engine
+	articleDAO := article.NewGromArticleDao(db)
+	articleRepository := article2.NewCacheArticleRepostiory(articleDAO, loggerV1)
+	client := ioc.InitKafka()
+	syncProducer := ioc.NewSyncProducer(client)
+	producer := article3.NewKafkaProducer(syncProducer)
+	articleService := service.NewArticleService(articleRepository, producer, loggerV1)
+	articleHandler := web.NewArticleHandler(articleService, loggerV1)
+	engine := ioc.InitGin(v, userHandler, oAuth2WechatHandler, articleHandler)
+	interactiveDAO := dao.NewGormInteractiveDAO(db)
+	redisInteractiveCache := cache.NewRedisInteractiveCache(cmdable)
+	cacheReadReopsitory := repository.NewInteractiveService(interactiveDAO, redisInteractiveCache, loggerV1)
+	interactiveReadEventConsumer := article3.NewInteractiveReadEventConsumer(loggerV1, cacheReadReopsitory, client)
+	v2 := ioc.NewConsumer(interactiveReadEventConsumer)
+	app := &App{
+		server:   engine,
+		consumer: v2,
+	}
+	return app
 }
