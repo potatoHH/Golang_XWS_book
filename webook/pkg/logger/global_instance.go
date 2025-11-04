@@ -19,4 +19,4 @@ func L() LoggerV1 {
 	return g
 }
 
-var GL LoggerV1 = &NopLogger{}
+var GL LoggerV1 = &NoOpLogger{}

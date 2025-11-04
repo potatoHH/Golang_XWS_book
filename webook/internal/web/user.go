@@ -4,7 +4,6 @@ import (
 	"Book_Exp/webook/internal/domain"
 	"Book_Exp/webook/internal/service"
 	ijwt "Book_Exp/webook/internal/web/jwt"
-	"Book_Exp/webook/pkg/ginx"
 	"Book_Exp/webook/pkg/logger"
 	"fmt"
 
@@ -63,9 +62,9 @@ func (c *UserHandler) RegisterRoutes(server *gin.Engine) { // 注册路由
 	ug.POST("/logout", c.LogOutJWT)
 	ug.POST("/login_sms/code/send", c.SendLoginSmsCode)
 	ug.POST("/refresh_token", c.RefreshToken)
-	ug.POST("/login_sms", ginx.WrapBody[LoginSMSReq](
-		c.l.With(logger.String("method", "login_sms")),
-		c.LoginSms))
+	//ug.POST("/login_sms", ginx.WrapBody[LoginSMSReq](
+	//	c.l.With(logger.String("method", "login_sms")),
+	//	c.LoginSms))
 
 }
 

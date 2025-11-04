@@ -1,12 +1,16 @@
 package main
 
 import (
+	"net/http"
+
 	"github.com/gin-gonic/gin"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/spf13/viper"
 )
 
 func main() {
-	initViperV1()
+	//initViperV1()
+	initPromenteus()
 	app := InitWebServer()
 	for _, c := range app.consumer {
 		err := c.Start()
@@ -30,6 +34,13 @@ func main() {
 //	}
 //}
 
+func initPromenteus() {
+	go func() {
+		http.Handle("metrics", promhttp.Handler())
+		//监听 8081 端口,你也可以做成可配置的
+		http.ListenAndServe(":8081", nil)
+	}()
+}
 func initViperV1() {
 	viper.SetConfigName("dev")
 	viper.SetConfigType("yaml")

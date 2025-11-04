@@ -13,6 +13,12 @@ import (
 //这个东西放到你们ginx插件库里面去, 技术含量不是很高,但是有心意
 
 var L logger.LoggerV1
+var vector *prometheus.CounterVec
+
+func InitCounter(opt prometheus.CounterOpts) {
+	vector = prometheus.NewCounterVec(opt, []string{"code"})
+	prometheus.MustRegister(vector)
+}
 
 func WrapBody[T any](l logger.LoggerV1, fn func(ctx *gin.Context, req T) (Result, error)) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
@@ -62,6 +68,7 @@ func WrapBodyAndToken[T any, C jwt.Claims](fn func(ctx *gin.Context, req T, uc C
 				logger.Error(err),
 			)
 		}
+		vector.WithLabelValues(strconv.Itoa(res.Code)).Inc()
 		ctx.JSON(200, res)
 	}
 
@@ -77,15 +84,7 @@ func WrapToken[C jwt.Claims](fn func(ctx *gin.Context, uc C) (Result, error)) gi
 
 // 受制于泛型，我们这里只能使用包变量，我深恶痛绝的包变量
 var log logger.LoggerV1 = logger.NewNoOpLogger()
-var (
-	// 包变量导致我们这个地方的代码非常垃圾
-	vector *prometheus.CounterVec
-)
 
-func InitCounter(opt prometheus.CounterOpts) {
-	vector = prometheus.NewCounterVec(opt, []string{"code"})
-	prometheus.MustRegister(vector)
-}
 func SetLogger(l logger.LoggerV1) {
 	log = l
 }

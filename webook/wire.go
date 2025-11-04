@@ -25,8 +25,7 @@ func InitWebServer() *App {
 		ioc.InitLogger,
 		dao.NewUserDao,
 		dao.NewGormInteractiveDAO,
-		//article3.NewGORMArticleDAO,
-		article3.NewGromArticleDao,
+		article3.NewArticleDao,
 
 		cache.NewUserCache,
 		cache.NewCodeCache,
@@ -36,6 +35,7 @@ func InitWebServer() *App {
 		repository.NewCodeRepository,
 		repository.NewInteractiveService,
 		article2.NewCacheArticleRepostiory,
+		article.NewKafkaProducer,
 
 		service.NewUserService,
 		service.NewCodeService,
@@ -55,9 +55,8 @@ func InitWebServer() *App {
 		ioc.InitMiddlewares,
 		ioc.NewWechatHandler,
 		//consumer
-		article.NewInteractiveReadEventConsumer,
-		article.NewKafkaProducer,
-		//TODO组装我这个结构体的所有字段
+		//article.NewInteractiveReadEventBatchConsumer,
+		article.NewInteractiveReadEventBatchConsumer,
 		wire.Struct(new(App), "*"),
 	)
 	return new(App)

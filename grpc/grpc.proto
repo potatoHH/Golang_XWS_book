@@ -1,0 +1,19 @@
+syntax= "proto3";
+option go_package = "Book_Exp/grpc";
+
+message User{
+  int64 id =1;
+  string name =2;
+}
+service UserSerivice{
+  rpc GetById(GetByIdRequest) returns (GetByIdResponse);
+
+}
+message GetByIdRequest{
+  int64 id =1;
+}
+message GetByIdResponse{
+  User user =1;
+}
+
+

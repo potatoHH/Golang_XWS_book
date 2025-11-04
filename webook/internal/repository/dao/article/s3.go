@@ -26,6 +26,26 @@ type S3DAO struct {
 	bucket *string
 }
 
+func (o *S3DAO) GetByID(ctx context.Context, id int64) (Article, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (o *S3DAO) GetPubById(ctx context.Context, id int64) (Article, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (o *S3DAO) InsertLikeInfo(ctx context.Context, biz string, id int64, uid int64) error {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (o *S3DAO) DeleteLikeInfo(ctx context.Context, biz string, id int64, uid int64) error {
+	//TODO implement me
+	panic("implement me")
+}
+
 // NewOssDAO 因为组合 GORMArticleDAO 是一个内部实现细节
 // 所以这里要直接传入 DB
 func NewOssDAO(oss *s3.S3, db *gorm.DB) ArticleDAO {

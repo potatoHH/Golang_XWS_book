@@ -9,4 +9,4 @@ import (
 type handler interface {
 	RegisterRoutes(server *gin.Engine)
 }
-type Result = ginx.Result
+type Result1 = ginx.Result

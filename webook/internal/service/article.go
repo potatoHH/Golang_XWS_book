@@ -9,6 +9,7 @@ import (
 	"time"
 )
 
+//go:generate mockgen -source=./article.go -package=svcmocks -destination=mocks/article.mock.go ArticleService
 type ArticleService interface {
 	Publish(ctx context.Context, art domain.Article) (int64, error)
 	PublishV1(ctx context.Context, art domain.Article) (int64, error)
@@ -16,6 +17,7 @@ type ArticleService interface {
 	Withdraw(ctx context.Context, art domain.Article) error
 	List(ctx context.Context, uid int64, limit int, offset int) ([]domain.Article, error)
 	GetById(ctx context.Context, id, uid int64) (domain.Article, error)
+	ListPub(ctx context.Context, offset, limt int) ([]domain.Article, error)
 }
 
 type ArticleServiceV1 struct {
@@ -25,6 +27,11 @@ type ArticleServiceV1 struct {
 	reader   article.ArticleReaderRepository
 	l        logger.LoggerV1
 	producer events.Producer
+}
+
+func (a *ArticleServiceV1) ListPub(ctx context.Context, offset, limt int) ([]domain.Article, error) {
+	//TODO implement me
+	panic("implement me")
 }
 
 func (a *ArticleServiceV1) GetById(ctx context.Context, id, uid int64) (domain.Article, error) {

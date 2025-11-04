@@ -8,9 +8,10 @@ import (
 	"context"
 )
 
-type CacheReadReopsitory interface {
+type InteractiveRepository interface {
 	//阅读数
 	IncrReadCnt(ctx context.Context, biz string, id int64) error
+	BatchReadCnt(ctx context.Context, biz []string, id []int64) error
 	//点赞
 	IncrLike(ctx context.Context, biz string, bizId int64, uid int64) error
 	DecrLike(ctx context.Context, biz string, bizId int64, uid int64) error
@@ -25,6 +26,13 @@ type CachedReadRepository struct {
 	dao   dao.InteractiveDAO
 	cache cache.RedisInteractiveCache
 	l     logger.LoggerV1
+}
+
+// BatchReadCnt 中的ids 和 bizs 的长度必须相等
+func (c *CachedReadRepository) BatchReadCnt(ctx context.Context, biz []string, id []int64) error {
+	//TODO 我们在这里不需要检测 bizs 和ids 的长度是否相等?
+	return c.dao.BatchIncrReadCnt(ctx, biz, id)
+
 }
 
 func (c *CachedReadRepository) Get(ctx context.Context, biz string, bizId int64, uid int64) (domain.Interactive, error) {
@@ -102,7 +110,7 @@ func (c *CachedReadRepository) IncrReadCnt(ctx context.Context, biz string, bizI
 	return c.cache.IncrReadCnt(ctx, biz, bizId)
 }
 
-func NewInteractiveService(dao dao.InteractiveDAO, cache cache.RedisInteractiveCache, l logger.LoggerV1) CacheReadReopsitory {
+func NewInteractiveService(dao dao.InteractiveDAO, cache cache.RedisInteractiveCache, l logger.LoggerV1) InteractiveRepository {
 	return &CachedReadRepository{
 		dao:   dao,
 		cache: cache,

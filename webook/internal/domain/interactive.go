@@ -8,4 +8,6 @@ type Interactive struct {
 	//我个人有没有点过赞,和收藏
 	Liked     bool `json:"liked"`
 	Collected bool `json:"collected"`
+	Biz       string
+	BizId     int64
 }
