@@ -1,0 +1,11 @@
+syntax="proto3";
+option go_package ="intr/v1";
+package intr.v1;
+
+service InteractiveService{
+
+}
+
+
+
+

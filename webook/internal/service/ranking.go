@@ -1,9 +1,11 @@
 package service
 
 import (
+	service2 "Book_Exp/webook/interactive/service"
 	"Book_Exp/webook/internal/domain"
+	"Book_Exp/webook/internal/repository"
 	"context"
-	"log"
+
 	"math"
 	"time"
 
@@ -17,21 +19,23 @@ type RankingService interface {
 }
 type BatchrankingService struct {
 	artSvc    ArticleService
-	intrSvc   InteractiveService
+	intrSvc   service2.InteractiveService
+	repo      repository.RankingRepository
 	batchSize int
 	n         int
 	//scoreFunc 不能返回负数
-	scoreFunc func(time time.Time, LikeCnt int64) float64
+	scoreFunc func(t time.Time, LikeCnt int64) float64
 }
 
-func NewBatchRankingService(artSvc ArticleService, intrSvc InteractiveService) RankingService {
+func NewBatchRankingService(artSvc ArticleService, intrSvc service2.InteractiveService) RankingService {
 	return &BatchrankingService{
 		intrSvc:   intrSvc,
 		artSvc:    artSvc,
 		batchSize: 100,
 		n:         100,
-		scoreFunc: func(time time.Time, LikeCnt int64) float64 {
-			return float64(LikeCnt-1) / math.Pow(float64(LikeCnt+2), 1.5)
+		scoreFunc: func(t time.Time, LikeCnt int64) float64 {
+			sec := time.Since(t).Seconds()
+			return float64(LikeCnt-1) / math.Pow(float64(sec+2), 1.5)
 		},
 	}
 }
@@ -41,18 +45,17 @@ func (svc *BatchrankingService) TopN(ctx context.Context) error {
 		return err
 	}
 	//放入redis里面
-	log.Println("开始更新排行榜", arts)
-	return nil
+	return svc.repo.ReplaceTopN(ctx, arts)
 }
 func (svc *BatchrankingService) topN(ctx context.Context) ([]domain.Article, error) {
 	//TODO 先拿一批数据
 	offset := 0
-	type Socre struct {
+	type Score struct {
 		score float64
 		art   domain.Article
 	}
 	//这里可以用非并发安全数据据
-	topN := queue.NewConcurrentPriorityQueue[Socre](svc.n, func(src Socre, dst Socre) int {
+	topN := queue.NewConcurrentPriorityQueue[Score](svc.n, func(src Score, dst Score) int {
 		if src.score > dst.score {
 			return 1
 		} else if src.score == dst.score {
@@ -63,7 +66,7 @@ func (svc *BatchrankingService) topN(ctx context.Context) ([]domain.Article, err
 	})
 	for {
 		//TODO 这里拿了一批
-		arts, err := svc.artSvc.ListPub(ctx, offset, svc.batchSize)
+		arts, err := svc.artSvc.ListPub(ctx, nil, offset, svc.batchSize)
 		if err != nil {
 			return nil, err
 		}
@@ -91,7 +94,7 @@ func (svc *BatchrankingService) topN(ctx context.Context) ([]domain.Article, err
 				//这种写法要求topN已经满了
 				val, _ := topN.Dequeue()
 				if val.score < score {
-					topN.Enqueue(Socre{
+					topN.Enqueue(Score{
 						art:   art,
 						score: score,
 					})
@@ -100,7 +103,8 @@ func (svc *BatchrankingService) topN(ctx context.Context) ([]domain.Article, err
 
 		}
 		//TODO 一批已经处理完成,要不要进行下一批
-		if len(arts) < svc.batchSize {
+		now := time.Now()
+		if len(arts) < svc.batchSize || now.Sub(arts[0].Utime).Hours() > 7*24 {
 			//这一批都没取够,
 			break
 		}

@@ -19,7 +19,7 @@ func InitKafka() sarama.Client {
 	if err != nil {
 		panic(err)
 	}
-	client, err := sarama.NewClient(cfg.Addrs, saramaCfg)
+	client, err := sarama.NewClient([]string{"localhost:9092"}, saramaCfg)
 	if err != nil {
 		panic(err)
 	}

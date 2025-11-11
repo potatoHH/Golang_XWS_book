@@ -3,7 +3,6 @@
 // - protoc-gen-go-grpc v1.5.1
 // - protoc             v5.27.3
 // source: grpc.proto
-
 package grpc
 
 import (

@@ -1,8 +1,8 @@
 package repository
 
 import (
-	"Book_Exp/webook/internal/domain"
-	"Book_Exp/webook/internal/repository/cache"
+	"Book_Exp/webook/interactive/domain"
+	"Book_Exp/webook/interactive/repository/cache"
 	"Book_Exp/webook/internal/repository/dao"
 	"Book_Exp/webook/pkg/logger"
 	"context"
@@ -150,4 +150,13 @@ func (c *CachedReadRepository) UpdateCntV1(intr *dao.Interactive) {
 func (c *CachedReadRepository) UpdateCntV2(intr dao.Interactive) domain.Interactive {
 	intr.LikeCnt = 30
 	return c.toDomain(intr)
+}
+
+func NewCachedInteractiveRepository(dao dao.InteractiveDAO,
+	cache cache.RedisInteractiveCache, l logger.LoggerV1) InteractiveRepository {
+	return &CachedReadRepository{
+		dao:   dao,
+		cache: cache,
+		l:     l,
+	}
 }

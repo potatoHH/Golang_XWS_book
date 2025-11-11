@@ -17,7 +17,7 @@ type ArticleService interface {
 	Withdraw(ctx context.Context, art domain.Article) error
 	List(ctx context.Context, uid int64, limit int, offset int) ([]domain.Article, error)
 	GetById(ctx context.Context, id, uid int64) (domain.Article, error)
-	ListPub(ctx context.Context, offset, limt int) ([]domain.Article, error)
+	ListPub(ctx context.Context, now time.Time, offset int, limt int) ([]domain.Article, error)
 }
 
 type ArticleServiceV1 struct {
@@ -29,9 +29,8 @@ type ArticleServiceV1 struct {
 	producer events.Producer
 }
 
-func (a *ArticleServiceV1) ListPub(ctx context.Context, offset, limt int) ([]domain.Article, error) {
-	//TODO implement me
-	panic("implement me")
+func (a *ArticleServiceV1) ListPub(ctx context.Context, now time.Time, offset int, limt int) ([]domain.Article, error) {
+	return a.repo.ListPub(ctx, now, offset, limt)
 }
 
 func (a *ArticleServiceV1) GetById(ctx context.Context, id, uid int64) (domain.Article, error) {

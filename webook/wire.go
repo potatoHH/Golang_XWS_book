@@ -3,6 +3,8 @@
 package main
 
 import (
+	repository2 "Book_Exp/webook/interactive/repository"
+	cache2 "Book_Exp/webook/interactive/repository/cache"
 	"Book_Exp/webook/internal/events/article"
 	"Book_Exp/webook/internal/repository"
 	article2 "Book_Exp/webook/internal/repository/article"
@@ -29,11 +31,11 @@ func InitWebServer() *App {
 
 		cache.NewUserCache,
 		cache.NewCodeCache,
-		cache.NewRedisInteractiveCache,
+		cache2.NewRedisInteractiveCache,
 
 		repository.NewUserRepository,
 		repository.NewCodeRepository,
-		repository.NewInteractiveService,
+		repository2.NewInteractiveService,
 		article2.NewCacheArticleRepostiory,
 		article.NewKafkaProducer,
 

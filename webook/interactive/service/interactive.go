@@ -1,8 +1,8 @@
 package service
 
 import (
-	"Book_Exp/webook/internal/domain"
-	"Book_Exp/webook/internal/repository"
+	"Book_Exp/webook/interactive/domain"
+	"Book_Exp/webook/interactive/repository"
 	"Book_Exp/webook/pkg/logger"
 	"context"
 

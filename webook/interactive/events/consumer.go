@@ -1,7 +1,8 @@
-package article
+package events
 
 import (
-	"Book_Exp/webook/internal/repository"
+	"Book_Exp/webook/interactive/repository"
+	"Book_Exp/webook/internal/events"
 	"Book_Exp/webook/pkg/logger"
 	"Book_Exp/webook/pkg/saramax"
 	"context"
@@ -9,6 +10,8 @@ import (
 
 	"github.com/IBM/sarama"
 )
+
+var _ events.Consumer = &InteractiveReadEventConsumer{} //
 
 type InteractiveReadEventConsumer struct {
 	client sarama.Client

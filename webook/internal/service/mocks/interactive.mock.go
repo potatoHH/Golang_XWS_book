@@ -5,7 +5,7 @@
 package svcmocks
 
 import (
-	domain "Book_Exp/webook/internal/domain"
+	"Book_Exp/webook/interactive/domain"
 	context "context"
 	reflect "reflect"
 

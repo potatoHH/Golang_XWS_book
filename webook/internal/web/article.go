@@ -1,6 +1,8 @@
 package web
 
 import (
+	domain2 "Book_Exp/webook/interactive/domain"
+	service2 "Book_Exp/webook/interactive/service"
 	"Book_Exp/webook/internal/domain"
 	"Book_Exp/webook/internal/service"
 	ijwt "Book_Exp/webook/internal/web/jwt"
@@ -20,7 +22,7 @@ var _ handler = (*ArticleHandler)(nil)
 type ArticleHandler struct {
 	svc     service.ArticleService
 	l       logger.LoggerV1
-	intrSvc service.InteractiveService
+	intrSvc service2.InteractiveService
 	biz     string
 }
 
@@ -96,7 +98,7 @@ func (a *ArticleHandler) Detail(ctx *gin.Context, usr ijwt.UserClaims) (ginx.Res
 
 	//}
 	//TODO  在这里获取文章的计数功能
-	var intr domain.Interactive
+	var intr domain2.Interactive
 	eg.Go(func() error {
 		uc := ctx.MustGet("users").(ijwt.UserClaims)
 		intr, err = a.intrSvc.Get(ctx, a.biz, id, uc.Uid)

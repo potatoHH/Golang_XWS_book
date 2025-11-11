@@ -1,6 +1,7 @@
 package article
 
 import (
+	"Book_Exp/webook/internal/domain"
 	"context"
 	"errors"
 	"time"
@@ -16,6 +17,47 @@ type MongoArticleDAO interface {
 	UpdateById(ctx context.Context, art Article) error
 	Sync(ctx context.Context, art Article) (int64, error)
 }
+
+func (m *MongoDBDAO) UpSert(ctx context.Context, art PublishArticle) error {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (m *MongoDBDAO) SyncStatus(ctx context.Context, id int64, author int64, status uint8) error {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (m *MongoDBDAO) GetByAuthor(ctx context.Context, uid int64, limit int, offset int) ([]Article, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (m *MongoDBDAO) GetByID(ctx context.Context, id int64) (Article, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (m *MongoDBDAO) GetPubById(ctx context.Context, id int64) (Article, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (m *MongoDBDAO) InsertLikeInfo(ctx context.Context, biz string, id int64, uid int64) error {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (m *MongoDBDAO) DeleteLikeInfo(ctx context.Context, biz string, id int64, uid int64) error {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (m *MongoDBDAO) ListPub(ctx context.Context, start time.Time, offset int, limt int) ([]domain.Article, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
 type MongoDBDAO struct {
 	client    *mongo.Client     //连接
 	col       *mongo.Collection //代表制作库

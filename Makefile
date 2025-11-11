@@ -13,6 +13,10 @@ mock:
 	@mockgen -source="E:\Book_Exp\webook\internal\repository\article\article_author.go" -package=artrepomocks -destination="E:\Book_Exp\webook\internal\repository\article\mocks\article_author.mock.go"
 	@mockgen -source="E:\Book_Exp\webook\internal\repository\article\article_reader.go" -package=artrepomocks -destination="E:\Book_Exp\webook\internal\repository\article\mocks\article_reader.mock.go"
 	@go mod tidy
+.PHONY:grpc
+grpc:
+	@buf generate webook/api/proto
+
 
 
 

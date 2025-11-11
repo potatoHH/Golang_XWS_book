@@ -1,6 +1,7 @@
 package article
 
 import (
+	"Book_Exp/webook/internal/domain"
 	"context"
 	"fmt"
 	"time"
@@ -21,9 +22,17 @@ type ArticleDAO interface {
 	//点赞
 	InsertLikeInfo(ctx context.Context, biz string, id int64, uid int64) error
 	DeleteLikeInfo(ctx context.Context, biz string, id int64, uid int64) error
+	ListPub(ctx context.Context, start time.Time, offset int, limt int) ([]domain.Article, error)
 }
 type GormArticleDao struct {
 	db *gorm.DB
+}
+
+func (dao *GormArticleDao) ListPub(ctx context.Context, start time.Time, offset int, limt int) ([]domain.Article, error) {
+	var res []Article
+	err := dao.db.WithContext(ctx).Where("utime<?", start.UnixMilli()).Order("utime DESC").Offset(offset).Limit(limt).Find(&res).Error
+	//return res, err
+	return nil, err
 }
 
 func NewGromArticleDao(db *gorm.DB) ArticleDAO {

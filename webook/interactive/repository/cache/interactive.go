@@ -1,7 +1,7 @@
 package cache
 
 import (
-	"Book_Exp/webook/internal/domain"
+	"Book_Exp/webook/interactive/domain"
 	"context"
 	_ "embed"
 	"fmt"

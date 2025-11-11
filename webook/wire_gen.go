@@ -7,6 +7,8 @@
 package main
 
 import (
+	repository2 "Book_Exp/webook/interactive/repository"
+	cache2 "Book_Exp/webook/interactive/repository/cache"
 	article3 "Book_Exp/webook/internal/events/article"
 	"Book_Exp/webook/internal/repository"
 	article2 "Book_Exp/webook/internal/repository/article"
@@ -48,8 +50,8 @@ func InitWebServer() *App {
 	articleHandler := web.NewArticleHandler(articleService, loggerV1)
 	engine := ioc.InitGin(v, userHandler, oAuth2WechatHandler, articleHandler)
 	interactiveDAO := dao.NewGormInteractiveDAO(db)
-	redisInteractiveCache := cache.NewRedisInteractiveCache(cmdable)
-	interactiveRepository := repository.NewInteractiveService(interactiveDAO, redisInteractiveCache, loggerV1)
+	redisInteractiveCache := cache2.NewRedisInteractiveCache(cmdable)
+	interactiveRepository := repository2.NewInteractiveService(interactiveDAO, redisInteractiveCache, loggerV1)
 	interactiveReadEventBatchConsumer := article3.NewInteractiveReadEventBatchConsumer(loggerV1, interactiveRepository, client)
 	v2 := ioc.NewConsumer(interactiveReadEventBatchConsumer)
 	app := &App{
