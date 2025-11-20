@@ -24,7 +24,7 @@ type InteractiveRepository interface {
 }
 type CachedReadRepository struct {
 	dao   dao.InteractiveDAO
-	cache cache.RedisInteractiveCache
+	cache cache.InteractiveCache
 	l     logger.LoggerV1
 }
 
@@ -107,22 +107,15 @@ func (c *CachedReadRepository) IncrReadCnt(ctx context.Context, biz string, bizI
 	}
 	//这边会有部分数据失败引发的一些不一致问题,但是你其实不需要解决
 	//因为阅读数不准确是完全没问题的
-	return c.cache.IncrReadCnt(ctx, biz, bizId)
+	return c.cache.IncrReadCntIfPresent(ctx, biz, bizId)
 }
 
-func NewInteractiveService(dao dao.InteractiveDAO, cache cache.RedisInteractiveCache, l logger.LoggerV1) InteractiveRepository {
-	return &CachedReadRepository{
-		dao:   dao,
-		cache: cache,
-		l:     l,
-	}
-}
 func (c *CachedReadRepository) DecrLike(ctx context.Context, biz string, bizId int64, uid int64) error {
 	err := c.dao.DeleteLikeInfo(ctx, biz, bizId, uid)
 	if err != nil {
 		return err
 	}
-	return c.cache.DecrLikeCntPresent(ctx, biz, bizId)
+	return c.cache.DecrLikeCntIfPresent(ctx, biz, bizId)
 }
 
 func (c *CachedReadRepository) IncrLike(ctx context.Context, biz string, bizId int64, uid int64) error {
@@ -130,7 +123,7 @@ func (c *CachedReadRepository) IncrLike(ctx context.Context, biz string, bizId i
 	if err != nil {
 		return err
 	}
-	return c.cache.IncrLikeCntPresent(ctx, biz, bizId)
+	return c.cache.IncrLikeCntIfPresent(ctx, biz, bizId)
 }
 
 // TODO 正常来说,参数必然不用指针:方法不要修改参数,通过返回值来修改参数
@@ -152,8 +145,7 @@ func (c *CachedReadRepository) UpdateCntV2(intr dao.Interactive) domain.Interact
 	return c.toDomain(intr)
 }
 
-func NewCachedInteractiveRepository(dao dao.InteractiveDAO,
-	cache cache.RedisInteractiveCache, l logger.LoggerV1) InteractiveRepository {
+func NewCachedInteractiveRepository(dao dao.InteractiveDAO, cache cache.InteractiveCache, l logger.LoggerV1) InteractiveRepository {
 	return &CachedReadRepository{
 		dao:   dao,
 		cache: cache,

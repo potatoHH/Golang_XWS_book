@@ -48,17 +48,17 @@ func (o *S3DAO) DeleteLikeInfo(ctx context.Context, biz string, id int64, uid in
 
 // NewOssDAO 因为组合 GORMArticleDAO 是一个内部实现细节
 // 所以这里要直接传入 DB
-func NewOssDAO(oss *s3.S3, db *gorm.DB) ArticleDAO {
-	return &S3DAO{
-		oss: oss,
-		// 你也可以考虑利用依赖注入来传入。
-		// 但是事实上这个很少变，所以你可以延迟到必要的时候再注入
-		bucket: ekit.ToPtr[string]("webook-1314583317"),
-		GORMArticleDAO: GORMArticleDAO{
-			db: db,
-		},
-	}
-}
+//func NewOssDAO(oss *s3.S3, db *gorm.DB) ArticleDAO {
+//	return &S3DAO{
+//		oss: oss,
+//		// 你也可以考虑利用依赖注入来传入。
+//		// 但是事实上这个很少变，所以你可以延迟到必要的时候再注入
+//		bucket: ekit.ToPtr[string]("webook-1314583317"),
+//		GORMArticleDAO: GORMArticleDAO{
+//			db: db,
+//		},
+//	}
+//}
 
 func (o *S3DAO) Sync(ctx context.Context, art Article) (int64, error) {
 	//TODO 保存制作库,保存线上库,并且上传到oss

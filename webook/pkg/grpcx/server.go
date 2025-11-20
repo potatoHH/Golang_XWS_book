@@ -1,0 +1,22 @@
+package grpcx
+
+import (
+	"net"
+
+	"google.golang.org/grpc"
+)
+
+type Server struct {
+	*grpc.Server
+	Add string
+}
+
+func (s *Server) Serve() error {
+	l, err := net.Listen("tcp", ":8090")
+	if err != nil {
+		return err
+	}
+	//这边会阻塞,类似与gin.Run
+	return s.Server.Serve(l)
+
+}

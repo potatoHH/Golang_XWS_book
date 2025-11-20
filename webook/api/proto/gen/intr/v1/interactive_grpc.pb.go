@@ -8,6 +8,7 @@ package intrv1
 
 import (
 	context "context"
+	"github.com/gin-gonic/gin"
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
@@ -39,6 +40,7 @@ type InteractiveServiceClient interface {
 	Collect(ctx context.Context, in *CollectRequest, opts ...grpc.CallOption) (*CollectResponse, error)
 	Get(ctx context.Context, in *GetRequest, opts ...grpc.CallOption) (*GetResponse, error)
 	GetByIds(ctx context.Context, in *GetByIdsRequest, opts ...grpc.CallOption) (*GetByIdsResponse, error)
+
 }
 
 type interactiveServiceClient struct {

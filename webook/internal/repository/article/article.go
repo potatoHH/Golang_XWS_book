@@ -45,12 +45,13 @@ type CacheArticleRepostiory struct {
 }
 
 func (repo *CacheArticleRepostiory) ListPub(ctx context.Context, start time.Time, offset int, limt int) ([]domain.Article, error) {
-	res, err := repo.dao.ListPub(ctx, start, offset, limt)
+	_, err := repo.dao.ListPub(ctx, start, offset, limt)
 	if err != nil {
 		return nil, err
 	}
-	return slice.Map(res, func(idx int, src article.Article) domain.Article {
-		return repo.ToDomain(src)
+	return slice.Map[article.PublishedArticle, domain.Article](nil, func(idx int, src article.PublishedArticle) domain.Article {
+		// 偷懒写法
+		return repo.ToDomain(article.Article(src))
 	}), nil
 }
 

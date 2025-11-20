@@ -1,7 +1,7 @@
 package service
 
 import (
-	service2 "Book_Exp/webook/interactive/service"
+	intrv1 "Book_Exp/webook/api/proto/gen/intr/v1"
 	"Book_Exp/webook/internal/domain"
 	"Book_Exp/webook/internal/repository"
 	"context"
@@ -19,7 +19,7 @@ type RankingService interface {
 }
 type BatchrankingService struct {
 	artSvc    ArticleService
-	intrSvc   service2.InteractiveService
+	intrSvc   intrv1.InteractiveServiceClient
 	repo      repository.RankingRepository
 	batchSize int
 	n         int
@@ -27,7 +27,7 @@ type BatchrankingService struct {
 	scoreFunc func(t time.Time, LikeCnt int64) float64
 }
 
-func NewBatchRankingService(artSvc ArticleService, intrSvc service2.InteractiveService) RankingService {
+func NewBatchRankingService(artSvc ArticleService, intrSvc intrv1.InteractiveServiceClient) RankingService {
 	return &BatchrankingService{
 		intrSvc:   intrSvc,
 		artSvc:    artSvc,
@@ -66,7 +66,7 @@ func (svc *BatchrankingService) topN(ctx context.Context) ([]domain.Article, err
 	})
 	for {
 		//TODO 这里拿了一批
-		arts, err := svc.artSvc.ListPub(ctx, nil, offset, svc.batchSize)
+		arts, err := svc.artSvc.ListPub(ctx, time.Time{}, offset, svc.batchSize)
 		if err != nil {
 			return nil, err
 		}
@@ -74,17 +74,21 @@ func (svc *BatchrankingService) topN(ctx context.Context) ([]domain.Article, err
 			return src.Id
 		})
 		//TODO  要去找对应的点赞数据
-		intrs, err := svc.intrSvc.GetByIds(ctx, "article", ids)
+		intrs, err := svc.intrSvc.GetByIds(ctx, &intrv1.GetByIdsRequest{
+			Biz: "article", Ids: ids,
+		})
 		if err != nil {
 			return nil, err
 		}
 		//TODO 要去找到对应的点赞数据
-		svc.intrSvc.GetByIds(ctx, "article", []int64{1, 2, 3})
+		svc.intrSvc.GetByIds(ctx, &intrv1.GetByIdsRequest{
+			Biz: "article", Ids: []int64{1, 2, 3},
+		})
 		//TODO 合并计算 score
 
 		//TODO 排序 sort
 		for _, art := range arts {
-			intr, ok := intrs[art.Id]
+			intr, ok := intrs.Intrs[art.Id]
 			if !ok {
 				continue
 			}

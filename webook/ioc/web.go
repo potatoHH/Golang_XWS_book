@@ -4,7 +4,6 @@ import (
 	"Book_Exp/webook/internal/web"
 	ijwt "Book_Exp/webook/internal/web/jwt"
 	"Book_Exp/webook/internal/web/middleware"
-	"Book_Exp/webook/pkg/ginx"
 	logger2 "Book_Exp/webook/pkg/ginx/middlewares/logger"
 	"Book_Exp/webook/pkg/logger"
 	"context"
@@ -13,7 +12,6 @@ import (
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
-	"github.com/prometheus/client_golang/prometheus"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -28,12 +26,12 @@ func InitGin(middl []gin.HandlerFunc, userhdl *web.UserHandler, oauth2WechatHdl 
 func InitMiddlewares(redisClient redis.Cmdable, jwthdl ijwt.Handler, l logger.LoggerV1) []gin.HandlerFunc {
 	return []gin.HandlerFunc{
 		corsHdl(),
-		ginx.InitCounter(prometheus.CounterOpts{
-			Namespace: "ginx",
-			Subsystem: "webook",
-			Name:      "ginx_http",
-			Help:      "Http的业务错误码",
-		}),
+		//ginx.InitCounter(prometheus.CounterOpts{
+		//	Namespace: "ginx",
+		//	Subsystem: "webook",
+		//	Name:      "ginx_http",
+		//	Help:      "Http的业务错误码",
+		//}),
 		logger2.NewBuilder(func(ctx context.Context, al *logger2.AccessLog) {
 			l.Debug("HTTP请求", logger.Field{
 				Key:   "al",

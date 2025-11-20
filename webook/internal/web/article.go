@@ -1,8 +1,8 @@
 package web
 
 import (
-	domain2 "Book_Exp/webook/interactive/domain"
-	service2 "Book_Exp/webook/interactive/service"
+	intrv1 "Book_Exp/webook/api/proto/gen/intr/v1"
+
 	"Book_Exp/webook/internal/domain"
 	"Book_Exp/webook/internal/service"
 	ijwt "Book_Exp/webook/internal/web/jwt"
@@ -22,14 +22,15 @@ var _ handler = (*ArticleHandler)(nil)
 type ArticleHandler struct {
 	svc     service.ArticleService
 	l       logger.LoggerV1
-	intrSvc service2.InteractiveService
+	intrSvc intrv1.InteractiveServiceClient
 	biz     string
 }
 
-func NewArticleHandler(svc service.ArticleService, l logger.LoggerV1) *ArticleHandler {
+func NewArticleHandler(svc service.ArticleService, l logger.LoggerV1, intrSvc intrv1.InteractiveServiceClient) *ArticleHandler {
 	return &ArticleHandler{
-		svc: svc,
-		biz: "article",
+		svc:     svc,
+		biz:     "article",
+		intrSvc: intrSvc,
 	}
 }
 
@@ -51,7 +52,12 @@ func (a *ArticleHandler) RegisterRoutes(g *gin.Engine) {
 }
 
 func (a *ArticleHandler) Collect(ctx *gin.Context, req CollectReq, uc ijwt.UserClaims) (ginx.Result, error) {
-	err := a.intrSvc.Collect(ctx, a.biz, uc.Uid, req.Cid, req.Id)
+	_, err := a.intrSvc.Collect(ctx, &intrv1.CollectRequest{
+		Biz:   a.biz,
+		Uid:   uc.Uid,
+		Cid:   req.Cid,
+		BizId: req.Id,
+	})
 	if err != nil {
 		return ginx.Result{Code: 5, Msg: "系统错误"}, err
 	}
@@ -61,9 +67,17 @@ func (a *ArticleHandler) Collect(ctx *gin.Context, req CollectReq, uc ijwt.UserC
 func (a *ArticleHandler) Like(ctx *gin.Context, req LikeReq, uc ijwt.UserClaims) (ginx.Result, error) {
 	var err error
 	if req.Like {
-		err = a.intrSvc.Like(ctx, a.biz, req.Id, uc.Uid)
+		_, err = a.intrSvc.Like(ctx, &intrv1.LikeRequest{
+			Biz:   a.biz,
+			Uid:   uc.Uid,
+			BizId: req.Id,
+		})
 	} else {
-		err = a.intrSvc.CancleLike(ctx, a.biz, req.Id, uc.Uid)
+		_, err = a.intrSvc.CancelLike(ctx, &intrv1.CancelLikeRequest{
+			Biz:   a.biz,
+			Uid:   uc.Uid,
+			BizId: req.Id,
+		})
 	}
 	if err != nil {
 		return ginx.Result{Code: 5, Msg: "系统错误"}, err
@@ -98,10 +112,14 @@ func (a *ArticleHandler) Detail(ctx *gin.Context, usr ijwt.UserClaims) (ginx.Res
 
 	//}
 	//TODO  在这里获取文章的计数功能
-	var intr domain2.Interactive
+	var getResp *intrv1.GetResponse
 	eg.Go(func() error {
 		uc := ctx.MustGet("users").(ijwt.UserClaims)
-		intr, err = a.intrSvc.Get(ctx, a.biz, id, uc.Uid)
+		getResp, err = a.intrSvc.Get(ctx, &intrv1.GetRequest{
+			Biz:   a.biz,
+			Uid:   uc.Uid,
+			BizId: id,
+		})
 		if err != nil {
 			//容忍错误的写法不返回 return
 			a.l.Error("获取文章信息失败", logger.Error(err))
@@ -117,7 +135,10 @@ func (a *ArticleHandler) Detail(ctx *gin.Context, usr ijwt.UserClaims) (ginx.Res
 	//TODO 增加阅读计数,这个功能 是不是可以让前端,主动刚发一个http请求 来增加一个计数
 	go func() {
 		//TODO 这里可以增加一个计数  go func  异步去执行
-		er := a.intrSvc.IncrReadCnt(ctx, biz, art.Id)
+		_, er := a.intrSvc.IncrReadCnt(ctx, &intrv1.IncrReadCntRequest{
+			Biz:   a.biz,
+			BizId: art.Id,
+		})
 		if er != nil {
 			a.l.Error("增加阅读计数失败",
 				logger.Error(err),
@@ -125,6 +146,7 @@ func (a *ArticleHandler) Detail(ctx *gin.Context, usr ijwt.UserClaims) (ginx.Res
 			)
 		}
 	}()
+	intr := getResp.Intr
 	//这里不是借助数据库来判定的方法
 	return ginx.Result{
 		Data: ArtcleVO{
