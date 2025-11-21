@@ -5,6 +5,7 @@ package main
 import (
 	repository2 "Book_Exp/webook/interactive/repository"
 	cache2 "Book_Exp/webook/interactive/repository/cache"
+	service2 "Book_Exp/webook/interactive/service"
 	"Book_Exp/webook/internal/events/article"
 	"Book_Exp/webook/internal/repository"
 	article2 "Book_Exp/webook/internal/repository/article"
@@ -26,22 +27,26 @@ func InitWebServer() *App {
 		ioc.InitDB, ioc.InitRedis, //最基础的第三方依 赖
 		ioc.InitLogger,
 		dao.NewUserDao,
+		ioc.InitGRPCClient,
 		dao.NewGormInteractiveDAO,
 		article3.NewArticleDao,
 
 		cache.NewUserCache,
 		cache.NewCodeCache,
 		cache2.NewRedisInteractiveCache,
+		cache.NewRedisArticleCache,
 
 		repository.NewUserRepository,
 		repository.NewCodeRepository,
-		repository2.NewInteractiveService,
+		repository2.NewCachedInteractiveRepository,
+
 		article2.NewCacheArticleRepostiory,
 		article.NewKafkaProducer,
 
 		service.NewUserService,
 		service.NewCodeService,
 		service.NewArticleService,
+		service2.NewInteractiveService,
 
 		ioc.InitSmsService,
 		ioc.InitOAuth2WechatHandler,

@@ -13,26 +13,30 @@ import (
 
 //将一个本地实现来伪装成grpc客户端
 
-type InteractiveService struct {
+type InteractiverServiceApadter struct {
 	svc service.InteractiveService
 }
 
-func (i *InteractiveService) IncrReadCnt(ctx context.Context, in *intrv1.IncrReadCntRequest, opts ...grpc.CallOption) (*intrv1.IncrReadCntResponse, error) {
+func NewInteractiverServiceApadter(svc service.InteractiveService) *InteractiverServiceApadter {
+	return &InteractiverServiceApadter{svc: svc}
+}
+
+func (i *InteractiverServiceApadter) IncrReadCnt(ctx context.Context, in *intrv1.IncrReadCntRequest, opts ...grpc.CallOption) (*intrv1.IncrReadCntResponse, error) {
 	err := i.svc.IncrReadCnt(ctx, in.Biz, in.BizId)
 	return &intrv1.IncrReadCntResponse{}, err
 }
 
-func (i *InteractiveService) Like(ctx context.Context, in *intrv1.LikeRequest, opts ...grpc.CallOption) (*intrv1.LikeResponse, error) {
+func (i *InteractiverServiceApadter) Like(ctx context.Context, in *intrv1.LikeRequest, opts ...grpc.CallOption) (*intrv1.LikeResponse, error) {
 	err := i.svc.Like(ctx, in.Biz, in.BizId, in.Uid)
 	return &intrv1.LikeResponse{}, err
 }
 
-func (i *InteractiveService) CancelLike(ctx context.Context, in *intrv1.CancelLikeRequest, opts ...grpc.CallOption) (*intrv1.CancelLikeResponse, error) {
+func (i *InteractiverServiceApadter) CancelLike(ctx context.Context, in *intrv1.CancelLikeRequest, opts ...grpc.CallOption) (*intrv1.CancelLikeResponse, error) {
 	err := i.svc.CancleLike(ctx, in.Biz, in.BizId, in.Uid)
 	return &intrv1.CancelLikeResponse{}, err
 }
 
-func (i *InteractiveService) Collect(ctx context.Context, in *intrv1.CollectRequest, opts ...grpc.CallOption) (*intrv1.CollectResponse, error) {
+func (i *InteractiverServiceApadter) Collect(ctx context.Context, in *intrv1.CollectRequest, opts ...grpc.CallOption) (*intrv1.CollectResponse, error) {
 	if in.Uid <= 0 {
 		return nil, status.Error(codes.InvalidArgument, "Uid 非法")
 	}
@@ -40,7 +44,7 @@ func (i *InteractiveService) Collect(ctx context.Context, in *intrv1.CollectRequ
 	return &intrv1.CollectResponse{}, err
 }
 
-func (i *InteractiveService) Get(ctx context.Context, in *intrv1.GetRequest, opts ...grpc.CallOption) (*intrv1.GetResponse, error) {
+func (i *InteractiverServiceApadter) Get(ctx context.Context, in *intrv1.GetRequest, opts ...grpc.CallOption) (*intrv1.GetResponse, error) {
 	res, err := i.svc.Get(ctx, in.GetBiz(), in.GetBizId(), in.GetUid())
 	if err != nil {
 		return nil, err
@@ -49,12 +53,12 @@ func (i *InteractiveService) Get(ctx context.Context, in *intrv1.GetRequest, opt
 		Intr: i.toDTO(res),
 	}, nil
 }
-func (i *InteractiveService) GetByIds(ctx context.Context, in *intrv1.GetByIdsRequest, opts ...grpc.CallOption) (*intrv1.GetByIdsResponse, error) {
+func (i *InteractiverServiceApadter) GetByIds(ctx context.Context, in *intrv1.GetByIdsRequest, opts ...grpc.CallOption) (*intrv1.GetByIdsResponse, error) {
 	_, err := i.svc.GetByIds(ctx, in.Biz, in.Ids)
 	return &intrv1.GetByIdsResponse{}, err
 }
 
-func (i *InteractiveService) toDTO(intr domain.Interactive) *intrv1.Interactive {
+func (i *InteractiverServiceApadter) toDTO(intr domain.Interactive) *intrv1.Interactive {
 	return &intrv1.Interactive{
 		Biz:        intr.Biz,
 		BizId:      intr.BizId,

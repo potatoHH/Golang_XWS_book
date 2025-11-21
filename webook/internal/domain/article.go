@@ -23,13 +23,14 @@ const (
 
 type ArticleStatus uint8
 
-func (a Article) Abstrract() string {
+func (a Article) Abstract() string {
 	cs := []rune(a.Content)
 	if len(cs) < 100 {
 		return a.Content
 	}
 	return string(cs[:100])
 }
+
 func (s ArticleStatus) ToUnit8() uint8 {
 	return uint8(s)
 }

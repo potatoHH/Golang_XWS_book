@@ -175,8 +175,8 @@ func (a *ArticleHandler) Withdraw(ctx *gin.Context) {
 	if err := ctx.Bind(&req); err != nil {
 		return
 	}
-	c, _ := ctx.Get("claims")
-	claims, ok := c.(*ijwt.UserClaims)
+	c, _ := ctx.Get("users")
+	claims, ok := c.(ijwt.UserClaims)
 	if !ok {
 		//你可以考虑监控住这里
 		ctx.JSON(http.StatusOK, Result{
@@ -212,8 +212,8 @@ func (a *ArticleHandler) Edit(ctx *gin.Context) {
 	if err := ctx.Bind(&req); err != nil {
 		return
 	}
-	c, _ := ctx.Get("claims")
-	claims, ok := c.(*ijwt.UserClaims)
+	c, _ := ctx.Get("users")
+	claims, ok := c.(ijwt.UserClaims)
 	if !ok {
 		//你可以考虑监控住这里
 		ctx.JSON(http.StatusOK, Result{
@@ -245,8 +245,8 @@ func (a *ArticleHandler) Publish(ctx *gin.Context) {
 	if err := ctx.Bind(&req); err != nil {
 		return
 	}
-	c, _ := ctx.Get("claims")
-	claims, ok := c.(*ijwt.UserClaims)
+	c, _ := ctx.Get("users")
+	claims, ok := c.(ijwt.UserClaims)
 	if !ok {
 		//你可以考虑监控住这里
 		ctx.JSON(http.StatusOK, Result{

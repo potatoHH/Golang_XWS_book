@@ -28,7 +28,7 @@ func (s *ArticleTestSuite) SetUpSuite() {
 	//在所有测试执行前,先执行一些内容
 	s.server = gin.Default()
 	s.server.Use(func(ctx *gin.Context) {
-		ctx.Set("claims", ijwt.UserClaims{
+		ctx.Set("users", ijwt.UserClaims{
 			Uid: 123,
 		})
 	})

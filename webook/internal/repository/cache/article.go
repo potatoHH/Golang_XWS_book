@@ -2,12 +2,14 @@ package cache
 
 import (
 	"Book_Exp/webook/internal/domain"
+	"Book_Exp/webook/internal/repository/dao/article"
+	"Book_Exp/webook/pkg/logger"
 	"context"
 	"encoding/json"
 	"fmt"
-	"time"
-
 	"github.com/redis/go-redis/v9"
+
+	"time"
 )
 
 type ArticleCache interface {
@@ -26,9 +28,21 @@ type ArticleCache interface {
 
 type RedisArticleCache struct {
 	client redis.Cmdable
+	dao    article.ArticleDAO
+	l      logger.LoggerV1
 }
 
-func (r *RedisArticleCache) IncrLilkeCntPresent(ctx context.Context, biz string, id int64) {}
+func NewRedisArticleCache(client redis.Cmdable, dao article.ArticleDAO, l logger.LoggerV1) ArticleCache {
+	return &RedisArticleCache{
+		client: client,
+		dao:    dao,
+		l:      l,
+	}
+}
+
+func (r *RedisArticleCache) IncrLilkeCntPresent(ctx context.Context, biz string, id int64) {
+	panic("te")
+}
 
 func (r *RedisArticleCache) Set(ctx context.Context, id int64) error {
 	data, err := json.Marshal(domain.Article{

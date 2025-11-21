@@ -51,9 +51,9 @@ func (l *LoginJwtMiddlewareBuilder) Build() gin.HandlerFunc {
 		//	return
 		//}
 		//tokenStr := segs[1]
-		claims := &ijwt.UserClaims{}
+		claims := ijwt.UserClaims{}
 		//parsewithClaims里面一定要传指针 拿到token
-		token, err := jwt.ParseWithClaims(tokenStr, claims, func(token *jwt.Token) (interface{}, error) { // 解析token
+		token, err := jwt.ParseWithClaims(tokenStr, &claims, func(token *jwt.Token) (interface{}, error) { // 解析token
 			return []byte("95osj3fUD7fo0mlYdDbncXz4VD2igvf0"), nil
 		})
 		if err != nil {
@@ -88,7 +88,7 @@ func (l *LoginJwtMiddlewareBuilder) Build() gin.HandlerFunc {
 		//	}
 		//}
 		//ctx.Header("x-jwt-token", tokenStr)
-		ctx.Set("claims", claims)
+		ctx.Set("users", claims)
 	}
 
 }

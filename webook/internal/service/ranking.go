@@ -25,12 +25,17 @@ type BatchrankingService struct {
 	n         int
 	//scoreFunc 不能返回负数
 	scoreFunc func(t time.Time, LikeCnt int64) float64
+	//负载
+	load int64
 }
 
-func NewBatchRankingService(artSvc ArticleService, intrSvc intrv1.InteractiveServiceClient) RankingService {
+func NewBatchRankingService(artSvc ArticleService,
+	repo repository.RankingRepository,
+	intrSvc intrv1.InteractiveServiceClient) RankingService {
 	return &BatchrankingService{
 		intrSvc:   intrSvc,
 		artSvc:    artSvc,
+		repo:      repo,
 		batchSize: 100,
 		n:         100,
 		scoreFunc: func(t time.Time, LikeCnt int64) float64 {

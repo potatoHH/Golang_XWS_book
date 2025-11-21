@@ -9,6 +9,7 @@ package main
 import (
 	repository2 "Book_Exp/webook/interactive/repository"
 	cache2 "Book_Exp/webook/interactive/repository/cache"
+	service2 "Book_Exp/webook/interactive/service"
 	article3 "Book_Exp/webook/internal/events/article"
 	"Book_Exp/webook/internal/repository"
 	article2 "Book_Exp/webook/internal/repository/article"
@@ -42,16 +43,19 @@ func InitWebServer() *App {
 	wechatHandlerConfig := ioc.NewWechatHandler()
 	oAuth2WechatHandler := web.NewOAuth2WechatHandler(wechatService, userServiceV1, wechatHandlerConfig, handler)
 	articleDAO := article.NewArticleDao(db)
-	articleRepository := article2.NewCacheArticleRepostiory(articleDAO, loggerV1)
+	articleCache := cache.NewRedisArticleCache(cmdable, articleDAO, loggerV1)
+	articleRepository := article2.NewCacheArticleRepostiory(articleDAO, loggerV1, userRepository, articleCache)
 	client := ioc.InitKafka()
 	syncProducer := ioc.NewSyncProducer(client)
 	producer := article3.NewKafkaProducer(syncProducer)
 	articleService := service.NewArticleService(articleRepository, producer, loggerV1)
-	articleHandler := web.NewArticleHandler(articleService, loggerV1)
-	engine := ioc.InitGin(v, userHandler, oAuth2WechatHandler, articleHandler)
 	interactiveDAO := dao.NewGormInteractiveDAO(db)
-	redisInteractiveCache := cache2.NewRedisInteractiveCache(cmdable)
-	interactiveRepository := repository2.NewInteractiveService(interactiveDAO, redisInteractiveCache, loggerV1)
+	interactiveCache := cache2.NewRedisInteractiveCache(cmdable)
+	interactiveRepository := repository2.NewCachedInteractiveRepository(interactiveDAO, interactiveCache, loggerV1)
+	interactiveService := service2.NewInteractiveService(interactiveRepository, loggerV1)
+	interactiveServiceClient := ioc.InitGRPCClient(interactiveService)
+	articleHandler := web.NewArticleHandler(articleService, loggerV1, interactiveServiceClient)
+	engine := ioc.InitGin(v, userHandler, oAuth2WechatHandler, articleHandler)
 	interactiveReadEventBatchConsumer := article3.NewInteractiveReadEventBatchConsumer(loggerV1, interactiveRepository, client)
 	v2 := ioc.NewConsumer(interactiveReadEventBatchConsumer)
 	app := &App{

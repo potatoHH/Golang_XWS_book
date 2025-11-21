@@ -29,6 +29,15 @@ type ArticleRepository interface {
 
 	//收藏
 }
+
+func NewArticleRespository(dao article.ArticleDAO, l logger.LoggerV1, c cache.ArticleCache) ArticleRepository {
+	return &CacheArticleRepostiory{
+		cache: c,
+		dao:   dao,
+		l:     l,
+	}
+}
+
 type CacheArticleRepostiory struct {
 	dao      article.ArticleDAO
 	userRepo repository.UserRepository
@@ -86,10 +95,12 @@ func (repo *CacheArticleRepostiory) GetByID(ctx context.Context, id int64) (doma
 	return repo.ToDomain(data), nil
 }
 
-func NewCacheArticleRepostiory(dao article.ArticleDAO, l logger.LoggerV1) ArticleRepository {
+func NewCacheArticleRepostiory(dao article.ArticleDAO, l logger.LoggerV1, userRepo repository.UserRepository, c cache.ArticleCache) ArticleRepository {
 	return &CacheArticleRepostiory{
-		dao: dao,
-		l:   l,
+		dao:      dao,
+		cache:    c,
+		userRepo: userRepo,
+		l:        l,
 	}
 }
 
@@ -127,11 +138,6 @@ func (repo *CacheArticleRepostiory) SyncStatus(ctx context.Context, id int64, au
 	return repo.dao.SyncStatus(ctx, id, author, status.ToUnit8())
 }
 
-func NewArticleRepostior(dao article.ArticleDAO) ArticleRepository {
-	return &CacheArticleRepostiory{
-		dao: dao,
-	}
-}
 func (repo *CacheArticleRepostiory) Sync(ctx context.Context, art domain.Article) (int64, error) {
 	//TODO 清空缓存
 	id, err := repo.dao.Sync(ctx, repo.toEntity(art))

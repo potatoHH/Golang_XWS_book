@@ -9,7 +9,6 @@ import (
 	"github.com/spf13/viper"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
-	glogger "gorm.io/gorm/logger"
 )
 
 func InitDB(l logger.LoggerV1) *gorm.DB {
@@ -17,52 +16,56 @@ func InitDB(l logger.LoggerV1) *gorm.DB {
 		DSN string `yaml:"dsn"`
 	}
 	var cfg = Config{
-		DSN: "root:root@tcp(localhost:13316)/webook_default",
+		DSN: "root:root@tcp(localhost:13316)/webook",
 	}
 	err := viper.UnmarshalKey("db", &cfg)
 	if err != nil {
 		panic(err)
 	}
 	db, err := gorm.Open(mysql.Open(cfg.DSN), &gorm.Config{
-		//缺了一个writer
-		Logger: glogger.New(gormLoggerFunc(l.Debug), glogger.Config{
-			SlowThreshold:             time.Microsecond * 10, //50/100毫米            // 慢查询阈值
-			IgnoreRecordNotFoundError: true,                  // 忽略记录未找到错误
-			ParameterizedQueries:      true,                  // 使用参数化查询
-			LogLevel:                  glogger.Info,          // 日志级别
-		}),
+		////缺了一个writer
+		//Logger: glogger.New(gormLoggerFunc(l.Debug), glogger.Config{
+		//	SlowThreshold:             time.Microsecond * 10, //50/100毫米            // 慢查询阈值
+		//	IgnoreRecordNotFoundError: true,                  // 忽略记录未找到错误
+		//	ParameterizedQueries:      true,                  // 使用参数化查询
+		//	LogLevel:                  glogger.Info,          // 日志级别
+		//}),
 	})
 
 	if err != nil {
 		panic(err)
 	}
-	vector := prometheus.NewSummaryVec(prometheus.SummaryOpts{
-		Namespace: "geekbing",
-		Name:      "gorm_query_time",
-		Subsystem: "webook",
-		Help:      "统计GORM的执行时间",
-		ConstLabels: map[string]string{
-			"db": "webook",
-		},
-		Objectives: map[float64]float64{
-			0.5:   0.01,
-			0.75:  0.01,
-			0.9:   0.01,
-			0.95:  0.01,
-			0.99:  0.01,
-			0.999: 0.01,
-		},
-	},
-
-		//如果join查询,talbe 就是 join在一起  ,或者table就是主表,A join B 记录的是A
-		[]string{"type", "table"})
-	pcb := &Callbacks{
-		vector: vector,
-	}
-	pcb.RegisterAll(db)
+	//vector := prometheus.NewSummaryVec(prometheus.SummaryOpts{
+	//	Namespace: "geekbing",
+	//	Name:      "gorm_query_time",
+	//	Subsystem: "webook",
+	//	Help:      "统计GORM的执行时间",
+	//	ConstLabels: map[string]string{
+	//		"db": "webook",
+	//	},
+	//	Objectives: map[float64]float64{
+	//		0.5:   0.01,
+	//		0.75:  0.01,
+	//		0.9:   0.01,
+	//		0.95:  0.01,
+	//		0.99:  0.01,
+	//		0.999: 0.01,
+	//	},
+	//},
+	//
+	//	//如果join查询,talbe 就是 join在一起  ,或者table就是主表,A join B 记录的是A
+	//	[]string{"type", "table"})
+	//pcb := &Callbacks{
+	//	vector: vector,
+	//}
+	//pcb.RegisterAll(db)
 	////插件用法
 	//db.Use(pcb)
-	prometheus.MustRegister(vector)
+	//prometheus.MustRegister(vector)
+	err = dao.InitTable(db)
+	if err != nil {
+		panic(err)
+	}
 	return db
 }
 
