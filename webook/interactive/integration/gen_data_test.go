@@ -1,16 +1,17 @@
 package integration
 
 import (
+	"Book_Exp/webook/interactive/integration/startup"
+	"Book_Exp/webook/internal/repository/dao"
 	_ "embed"
-	"gitee.com/geekbang/basic-go/webook/interactive/integration/startup"
-	"gitee.com/geekbang/basic-go/webook/interactive/repository/dao"
-	"github.com/stretchr/testify/require"
-	"gorm.io/gorm"
 	"math/rand"
 	"os"
 	"strconv"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/require"
+	"gorm.io/gorm"
 )
 
 //go:embed init.sql
@@ -28,7 +29,7 @@ func TestGenSQL(t *testing.T) {
 	require.NoError(t, err)
 
 	const prefix = "INSERT INTO `interactives`(`biz_id`, `biz`, `read_cnt`, `collect_cnt`, `like_cnt`, `ctime`, `utime`)\nVALUES"
-	const rowNum = 10
+	const rowNum = 1000 // 行数
 
 	now := time.Now().UnixMilli()
 	_, err = file.WriteString(prefix)
@@ -69,7 +70,8 @@ func TestGenData(t *testing.T) {
 	// GenData 要比 GenSQL 慢
 	// 你根据自己的需要调整批次，和每个批次大小
 	db := startup.InitTestDB()
-	db.DryRun = true
+	//这个为ture,只会输出,但不会执行 ,也不会报错
+	//db.DryRun = true  // 打印 SQL
 	// 1000 批
 	for i := 0; i < 10; i++ {
 		// 每次 100 条
