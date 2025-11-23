@@ -19,6 +19,6 @@ type User struct {
 	WechatInfo WecahteInfo
 }
 
-func (u *User) NewUser() {
-
+func (u *User) NewUser() string {
+	return "users"
 }

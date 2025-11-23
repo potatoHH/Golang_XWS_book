@@ -5,6 +5,7 @@ import (
 	"Book_Exp/webook/interactive/service"
 	"Book_Exp/webook/internal/web/client"
 
+	"github.com/fsnotify/fsnotify"
 	"github.com/spf13/viper"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -12,8 +13,9 @@ import (
 
 func InitGRPCClient(svc service.InteractiveService) intrv1.InteractiveServiceClient {
 	type Config struct {
-		Addr   string
-		Secure bool
+		Addr      string
+		Secure    bool
+		Threshold int32
 	}
 	var cfg Config
 	err := viper.UnmarshalKey("grpc", &cfg)
@@ -27,9 +29,15 @@ func InitGRPCClient(svc service.InteractiveService) intrv1.InteractiveServiceCli
 	} else {
 		opts = append(opts, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	}
-	
+
 	cc, err := grpc.NewClient(cfg.Addr, opts...)
 	remote := intrv1.NewInteractiveServiceClient(cc)
 	local := client.NewInteractiverServiceApadter(svc)
-	return client.NewGreyScaleInteractiveServiceClient(local, remote)
+	res := client.NewGreyScaleInteractiveServiceClient(local, remote)
+	//在这里监听配置文件
+	viper.OnConfigChange(func(in fsnotify.Event) {
+		var cfg Config
+		res.UpdateThreshold(cfg.Threshold)
+	})
+	return res
 }

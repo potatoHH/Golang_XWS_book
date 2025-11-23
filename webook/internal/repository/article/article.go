@@ -259,7 +259,7 @@ func (repo *CacheArticleRepostiory) PreCache(ctx context.Context, data []domain.
 	const contentSizeThreshold = 1024 * 1024
 	if len(data) > 0 && len(data[0].Content) < contentSizeThreshold {
 		//你也可以记录日志
-		if err := repo.cache.Set(ctx, data[0].Id); err != nil {
+		if err := repo.cache.Set(ctx, data[0]); err != nil {
 			repo.l.Error("提前准备缓存失败", logger.Error(err))
 		}
 	}

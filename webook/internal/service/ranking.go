@@ -5,6 +5,7 @@ import (
 	"Book_Exp/webook/internal/domain"
 	"Book_Exp/webook/internal/repository"
 	"context"
+	"errors"
 
 	"math"
 	"time"
@@ -87,8 +88,11 @@ func (svc *BatchrankingService) topN(ctx context.Context) ([]domain.Article, err
 		}
 		//TODO 要去找到对应的点赞数据
 		svc.intrSvc.GetByIds(ctx, &intrv1.GetByIdsRequest{
-			Biz: "article", Ids: []int64{1, 2, 3},
+			Biz: "article", Ids: ids,
 		})
+		if len(intrs.Intrs) == 0 {
+			return nil, errors.New("没有找到对应的点赞数据")
+		}
 		//TODO 合并计算 score
 
 		//TODO 排序 sort

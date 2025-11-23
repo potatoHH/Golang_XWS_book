@@ -152,7 +152,7 @@ func (a *ArticleHandler) Detail(ctx *gin.Context, usr ijwt.UserClaims) (ginx.Res
 		Data: ArtcleVO{
 			Id:       art.Id,
 			Title:    art.Title,
-			Abstract: art.Abstrract(),
+			Abstract: art.Abstract(),
 			//Content:  art.Content,
 			//Author:   art.Author,
 			Status:     art.Status.ToUnit8(),
@@ -289,7 +289,7 @@ func (a *ArticleHandler) List(ctx *gin.Context, req ListReq, uc ijwt.UserClaims)
 				return ArtcleVO{
 					Id:       src.Id,
 					Title:    src.Title,
-					Abstract: src.Abstrract(),
+					Abstract: src.Abstract(),
 					//Content:   src.Content,
 					//Author: src.Author,
 					Status: src.Status.ToUnit8(),
