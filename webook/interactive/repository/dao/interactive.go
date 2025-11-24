@@ -56,8 +56,9 @@ func (dao *GormInteractiveDAO) GetCollectInfo(ctx context.Context, biz string, b
 }
 
 func (dao *GormInteractiveDAO) Get(ctx context.Context, biz string, id int64) (Interactive, error) {
-	//TODO implement me
-	panic("implement me")
+	var res Interactive
+	err := dao.db.WithContext(ctx).Where("biz = ? AND id = ?", biz, id).First(&res).Error
+	return res, err
 }
 
 func (dao *GormInteractiveDAO) InsertCollectionBiz(ctx context.Context, cb UserCollectionBiz) error {
