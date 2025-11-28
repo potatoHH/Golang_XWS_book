@@ -33,12 +33,24 @@ func TestDoubleWirtePool(t *testing.T) {
 	}).Error
 	require.NoError(t, err)
 	//TODO  事务问题
+	err = db.Transaction(func(tx *gorm.DB) error {
+		return db.Create(&Interactive{
+			Biz:   "test_tx",
+			BizId: 456,
+		}).Error
+	})
+	require.NoError(t, err)
+	t.Log(db)
+	err = db.Model(&Interactive{}).Where("id > ?", 0).Updates(map[string]any{
+		"biz_id": 789,
+	}).Error
+	require.NoError(t, err)
 
 }
 
 type Interactive struct {
 	Id         int64  `gorm:"primaryKey,autoIncrement"`
-	BizId      int64  `gorm:"uniqueIndex:biz_type_id"`
+	BizId      int64  `gorm:"uniqueIndex:biz_id"`
 	Biz        string `gomr:"type:varchar(128);uniqueIndex:biz_type_id"`
 	ReadCnt    int64
 	CollectCnt int64

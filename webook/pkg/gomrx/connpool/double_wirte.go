@@ -9,6 +9,8 @@ import (
 	"gorm.io/gorm"
 )
 
+//TODO 双写的功能
+
 var errUnknownPattern = errors.New("未知的双写错误")
 
 const (
@@ -129,8 +131,39 @@ func (d *DoubleWirtePoolTx) Commit() error {
 }
 
 func (d *DoubleWirtePoolTx) Rollback() error {
-	//TODO implement me
-	panic("implement me")
+	switch d.pattern {
+	case patternSrcOnly:
+		return d.src.Rollback()
+	case patternSrcFirst:
+		//源库的数据提交失败了,目标库需不需要提交
+		err := d.src.Rollback()
+		if err != nil {
+			//个人觉得这里可以尝试roolback
+			return err
+		}
+		if d.dst != nil {
+			err = d.dst.Rollback()
+			if err != nil {
+
+			}
+		}
+		return nil
+	case patternDstOnly:
+		return d.dst.Rollback()
+	case patternDstFirst:
+		err := d.dst.Rollback()
+		if err != nil {
+			return err
+		}
+		if d.src != nil {
+			err = d.src.Rollback()
+			if err != nil {
+			}
+		}
+		return nil
+	default:
+		return errUnknownPattern
+	}
 }
 
 func (d *DoubleWirtePool) BeginTx(ctx context.Context, opt *sql.TxOptions) (gorm.ConnPool, error) {
