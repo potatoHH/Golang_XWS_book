@@ -4,10 +4,10 @@ import (
 	"Book_Exp/webook/internal/domain"
 	"Book_Exp/webook/internal/repository"
 	"Book_Exp/webook/pkg/logger"
-	"context"
-	"errors"
 
+	"github.com/pkg/errors"
 	"golang.org/x/crypto/bcrypt"
+	"golang.org/x/net/context"
 )
 
 var (
@@ -25,7 +25,8 @@ type UserServiceV1 interface {
 }
 
 type UserService struct { // 用户服务
-	repo   repository.UserRepository
+	repo repository.UserRepository
+
 	logger logger.LoggerV1
 }
 

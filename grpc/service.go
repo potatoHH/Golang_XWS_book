@@ -6,9 +6,10 @@ import (
 
 type Server struct {
 	UnimplementedUserSeriviceServer
+	Name string
 }
 
-func (s Server) GetById(ctx context.Context, request *GetByIdRequest) (*GetByIdResponse, error) {
+func (s *Server) GetById(ctx context.Context, request *GetByIdRequest) (*GetByIdResponse, error) {
 	return &GetByIdResponse{
 		User: &User{
 			Id:   345,

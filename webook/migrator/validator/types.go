@@ -38,6 +38,13 @@ func NewIncrValidator[T migrator.Entity](l logger.LoggerV1, base *gorm.DB, targe
 
 }
 
+// 全量校验
+func NewFullValidator[T migrator.Entity](l logger.LoggerV1, base *gorm.DB, target *gorm.DB, d string, p events.Producer, order string) {
+	v := newValidator[T](l, base, target, d, p, order)
+	v.order = "id"
+
+}
+
 func (v *Validator[T]) validate(ctx context.Context) error {
 	// 创建一个 errgroup 来并发执行两个验证任务
 	// errgroup 可以方便地管理多个 goroutine，并收集它们的错误
@@ -73,7 +80,7 @@ func (v *Validator[T]) ValidateBaseToTarget(ctx context.Context) {
 		//例如.Order("id Desc"),这样插入数据 offset 将会不准确
 		err := v.base.WithContext(dbCtx).
 			//utime 最好不要取等号
-			Where("utime> ?", v.utime).Offset(offset).First(&src).Order(v.order).Error
+			Where("utime> ?", v.utime).Offset(offset).First(&src).Order("utime").Error
 		cancle()
 		switch err {
 		case nil:
@@ -158,7 +165,7 @@ func (v *Validator[T]) ValidateTargetToBase(ctx context.Context) {
 		dbCtx, cancle := context.WithTimeout(ctx, time.Second*10)
 		var dstTs []T
 		//例如.Order("id Desc"),这样插入数据 offset 将会不准确
-		err := v.base.WithContext(dbCtx).Where("utime >?", v.utime).Offset(offset).Limit(v.batchSize).Find(&dstTs).Order(v.order).Error
+		err := v.base.WithContext(dbCtx).Where("utime >?", v.utime).Offset(offset).Limit(v.batchSize).Find(&dstTs).Order("utime").Error
 
 		cancle()
 		if len(dstTs) == 0 {

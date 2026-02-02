@@ -9,7 +9,6 @@ package main
 import (
 	repository2 "Book_Exp/webook/interactive/repository"
 	cache2 "Book_Exp/webook/interactive/repository/cache"
-	service2 "Book_Exp/webook/interactive/service"
 	article3 "Book_Exp/webook/internal/events/article"
 	"Book_Exp/webook/internal/repository"
 	article2 "Book_Exp/webook/internal/repository/article"
@@ -49,13 +48,13 @@ func InitWebServer() *App {
 	syncProducer := ioc.NewSyncProducer(client)
 	producer := article3.NewKafkaProducer(syncProducer)
 	articleService := service.NewArticleService(articleRepository, producer, loggerV1)
+	clientv3Client := ioc.InitEtcd()
+	interactiveServiceClient := ioc.InitGRPCClientV1(clientv3Client)
+	articleHandler := web.NewArticleHandler(articleService, loggerV1, interactiveServiceClient)
+	engine := ioc.InitGin(v, userHandler, oAuth2WechatHandler, articleHandler)
 	interactiveDAO := dao.NewGormInteractiveDAO(db)
 	interactiveCache := cache2.NewRedisInteractiveCache(cmdable)
 	interactiveRepository := repository2.NewCachedInteractiveRepository(interactiveDAO, interactiveCache, loggerV1)
-	interactiveService := service2.NewInteractiveService(interactiveRepository, loggerV1)
-	interactiveServiceClient := ioc.InitGRPCClient(interactiveService)
-	articleHandler := web.NewArticleHandler(articleService, loggerV1, interactiveServiceClient)
-	engine := ioc.InitGin(v, userHandler, oAuth2WechatHandler, articleHandler)
 	interactiveReadEventBatchConsumer := article3.NewInteractiveReadEventBatchConsumer(loggerV1, interactiveRepository, client)
 	v2 := ioc.NewConsumer(interactiveReadEventBatchConsumer)
 	app := &App{

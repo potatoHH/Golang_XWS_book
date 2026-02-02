@@ -5,7 +5,6 @@ package main
 import (
 	repository2 "Book_Exp/webook/interactive/repository"
 	cache2 "Book_Exp/webook/interactive/repository/cache"
-	service2 "Book_Exp/webook/interactive/service"
 	"Book_Exp/webook/internal/events/article"
 	"Book_Exp/webook/internal/repository"
 	article2 "Book_Exp/webook/internal/repository/article"
@@ -26,8 +25,12 @@ func InitWebServer() *App {
 		ioc.NewSyncProducer, ioc.NewConsumer,
 		ioc.InitDB, ioc.InitRedis, //最基础的第三方依 赖
 		ioc.InitLogger,
+		//流量控制用的
+		//ioc.InitGRPCClient,
+		//放在一起,启用etcd作为配置中心
+		ioc.InitEtcd,
+		ioc.InitGRPCClientV1,
 		dao.NewUserDao,
-		ioc.InitGRPCClient,
 		dao.NewGormInteractiveDAO,
 		article3.NewArticleDao,
 
@@ -46,7 +49,7 @@ func InitWebServer() *App {
 		service.NewUserService,
 		service.NewCodeService,
 		service.NewArticleService,
-		service2.NewInteractiveService,
+		//service2.NewInteractiveService,
 
 		ioc.InitSmsService,
 		ioc.InitOAuth2WechatHandler,

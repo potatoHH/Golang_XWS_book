@@ -6,7 +6,7 @@ import (
 )
 
 func main() {
-	//initViperV1()
+	initViperV1()
 	//initPromenteus()
 	app := InitWebServer()
 	for _, c := range app.consumer {

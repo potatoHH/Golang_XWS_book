@@ -59,7 +59,6 @@ remote_read:
 
 scrape_configs:
   - job_name: prometheus
-
     honor_labels: true
     # scrape_interval is defined by the configured global (15s).
     # scrape_timeout is defined by the global default (10s).

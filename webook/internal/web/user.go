@@ -81,7 +81,7 @@ func (c *UserHandler) Signup(ctx *gin.Context) {
 	if err := ctx.Bind(&req); err != nil { // 绑定参数
 		return // 返回错误
 	}
-	isemail, err := c.emilRegxExp.MatchString(req.Email)
+	isemail, err := c.emilRegxExp.MatchString(req.Email) //
 	if err != nil {
 		ctx.String(http.StatusOK, "系统错误")
 		return
@@ -201,7 +201,7 @@ func (c *UserHandler) logOut(ctx *gin.Context) {
 
 	})
 	sess.Save() // 保存session
-	ctx.String(http.StatusOK, "登录成功")
+	ctx.String(http.StatusOK, "退出成功")
 	return
 
 }

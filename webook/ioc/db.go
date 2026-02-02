@@ -31,7 +31,6 @@ func InitDB(l logger.LoggerV1) *gorm.DB {
 		//	LogLevel:                  glogger.Info,          // 日志级别
 		//}),
 	})
-
 	if err != nil {
 		panic(err)
 	}

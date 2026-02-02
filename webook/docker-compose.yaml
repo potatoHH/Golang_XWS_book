@@ -24,7 +24,6 @@ services:
       - '6379:6379'  #     注意这里我映射为了 6379 端口
 
 
-  #     一直用不上，注释掉先
   etcd:
     image: 'bitnami/etcd:3.5'
     environment:

@@ -7,4 +7,7 @@ kafka:
   addrs:
     - "localhost:9094"
 grpc:
-    addr: ":8090"
+  client:
+    port: 8090
+    etcdAddrs:
+      - "localhost:12379"
