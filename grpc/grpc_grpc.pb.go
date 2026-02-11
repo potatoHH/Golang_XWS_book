@@ -21,10 +21,10 @@ const (
 	UserSerivice_GetById_FullMethodName = "/UserSerivice/GetById"
 )
 
-// UserSeriviceClient is the client API for UserSerivice service.
+// UserServiceClient is the client API for UserSerivice service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
-type UserSeriviceClient interface {
+type UserServiceClient interface {
 	GetById(ctx context.Context, in *GetByIdRequest, opts ...grpc.CallOption) (*GetByIdResponse, error)
 }
 
@@ -32,7 +32,7 @@ type userSeriviceClient struct {
 	cc grpc.ClientConnInterface
 }
 
-func NewUserSeriviceClient(cc grpc.ClientConnInterface) UserSeriviceClient {
+func NewUserSeriviceClient(cc grpc.ClientConnInterface) UserServiceClient {
 	return &userSeriviceClient{cc}
 }
 

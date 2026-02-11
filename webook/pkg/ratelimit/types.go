@@ -22,7 +22,6 @@ type Limiter interface {
 //		rate:     rate,
 //	}
 //}
-//
 //func (r *RedisSlidingWindowLimiter) Limit(ctx context.Context, key string) (bool ,error) {
 //	return r.cmd.Eval(ctx, luaScript, []string{key}),
 //		r.interval.Milliseconds(),
