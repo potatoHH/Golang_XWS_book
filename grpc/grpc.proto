@@ -7,10 +7,18 @@ message User{
 }
 service UserService{
   rpc GetById(GetByIdRequest) returns (GetByIdResponse);
+  rpc UpdateById(UpdateRequest)returns(UpdateByIdResponse);
 
 }
 message GetByIdRequest{
   int64 id =1;
+}
+message UpdateRequest{
+  int64 id =2;
+}
+message UpdateByIdResponse{
+  User user =2;
+
 }
 message GetByIdResponse{
   User user =1;

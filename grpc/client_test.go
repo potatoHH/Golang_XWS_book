@@ -14,16 +14,16 @@ import (
 
 func TestClient(t *testing.T) {
 	//cc就是一个连接池,cc里面放了好多个连接
-	cc, err := grpc.NewClient(":8090",
+	cc, err := grpc.NewClient(":8092",
 		grpc.WithTransportCredentials(
 			insecure.NewCredentials()),
 		grpc.WithChainUnaryInterceptor(firstClient, secondClient))
 	require.NoError(t, err)
-	client := NewUserSeriviceClient(cc)
-	ctx, cancle := context.WithTimeout(context.Background(), time.Second*30)
-	defer cancle()
+	client := NewUserServiceClient(cc)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*3)
+	defer cancel()
 	resp, err := client.GetById(ctx, &GetByIdRequest{
-		Id: 345,
+		Id: 123,
 	})
 	assert.NoError(t, err)
 	t.Log(resp.User)

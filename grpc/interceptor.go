@@ -26,8 +26,8 @@ func (b *InterceptorBuilder) BuilderServerInterceptorServiceBiz() grpc.UnaryServ
 	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo,
 		handler grpc.UnaryHandler) (interface{}, error) {
 		//prefix 这里做成参数
-		if idreq, ok := req.(*GetByIdRequest); ok {
-			ok, err := b.limiter.Limit(ctx, fmt.Sprintf("limiter:service:%s:%d", info.FullMethod, idreq.Id))
+		if idReq, ok := req.(*GetByIdRequest); ok {
+			ok, err := b.limiter.Limit(ctx, fmt.Sprintf("limiter:service:%s:%d", info.FullMethod, idReq.Id))
 			if err != nil {
 				return nil, status.Errorf(codes.ResourceExhausted, "服务级别触发限流")
 			}
@@ -36,5 +36,6 @@ func (b *InterceptorBuilder) BuilderServerInterceptorServiceBiz() grpc.UnaryServ
 			}
 		}
 		return handler(ctx, req)
+
 	}
 }

@@ -9,11 +9,11 @@ import (
 )
 
 type AlwaysFailoverServer struct {
-	UnimplementedUserSeriviceServer
+	UnimplementedUserServiceServer
 	Name string
 }
 
-var _ UserSeriviceServer = &Server{}
+var _ UserServiceServer = &Server{}
 
 func (s *AlwaysFailoverServer) GetById(ctx context.Context, request *GetByIdRequest) (*GetByIdResponse, error) {
 	fmt.Println("进入了fail服务端")

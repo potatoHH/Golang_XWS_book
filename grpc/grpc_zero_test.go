@@ -29,7 +29,7 @@ func (s *GoZeroTest) TestGoZeroServer() {
 	}
 	server := zrpc.MustNewServer(c, func(server *grpc.Server) {
 		//把你的业务注册到你的server里
-		RegisterUserSeriviceServer(server, &Server{})
+		RegisterUserServiceServer(server, &Server{})
 	})
 	server.Start()
 }
@@ -40,7 +40,7 @@ func (s *GoZeroTest) TestGoZeroClient() {
 			Key:   "user",
 		},
 	})
-	client := NewUserSeriviceClient(zClient.Conn())
+	client := NewUserServiceClient(zClient.Conn())
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 	resp, err := client.GetById(ctx, &GetByIdRequest{Id: 1})

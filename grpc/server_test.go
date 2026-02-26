@@ -18,9 +18,9 @@ func TestServer(t *testing.T) {
 	}()
 	//TODO 创建一个user的server
 	userServer := &Server{}
-	RegisterUserSeriviceServer(server, userServer)
+	RegisterUserServiceServer(server, userServer)
 	//TODO 创建一个监听器,监听tcp端口8090
-	listener, err := net.Listen("tcp", ":8090")
+	listener, err := net.Listen("tcp", ":8092")
 	if err != nil {
 		panic(err)
 	}
@@ -38,9 +38,9 @@ func TestGrpcServer(t *testing.T) {
 		server.GracefulStop()
 	}()
 	userServer := &Server{}
-	RegisterUserSeriviceServer(server, userServer)
+	RegisterUserServiceServer(server, userServer)
 	//TODO 创建一个监听器,监听tcp端口8090
-	listener, err := net.Listen("tcp", ":8090")
+	listener, err := net.Listen("tcp", ":8092")
 	if err != nil {
 		panic(err)
 	}

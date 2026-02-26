@@ -112,7 +112,7 @@ func (s *EtcdTestSutie) startServer(addr string, weight int64) {
 	//}()
 
 	server := grpc.NewServer()
-	RegisterUserSeriviceServer(server, &Server{})
+	RegisterUserServiceServer(server, &Server{})
 	err = server.Serve(l)
 	s.T().Log(l)
 	//正常退出 enpoints
@@ -135,7 +135,7 @@ func (s *EtcdTestSutie) TestClient() {
 		grpc.WithResolvers(db),
 		grpc.WithTransportCredentials(insecure.NewCredentials()))
 	require.NoError(s.T(), err)
-	client := NewUserSeriviceClient(cc)
+	client := NewUserServiceClient(cc)
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 	resp, err := client.GetById(ctx, &GetByIdRequest{Id: 123})
@@ -163,7 +163,7 @@ func (s *EtcdTestSutie) TestCustomRoundRobinClient() {
 		//在这里使用负载均衡
 		grpc.WithDefaultServiceConfig(svgCfg),
 		grpc.WithTransportCredentials(insecure.NewCredentials()))
-	client := NewUserSeriviceClient(cc)
+	client := NewUserServiceClient(cc)
 	for i := 0; i < 10; i++ {
 		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 		resp, err := client.GetById(ctx, &GetByIdRequest{Id: 123})

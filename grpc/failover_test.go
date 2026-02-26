@@ -46,7 +46,7 @@ func (s *FailoverSuite) TestClient() {
 	t := s.T()
 	cc, err := grpc.NewClient("localhost:8090", grpc.WithTransportCredentials(insecure.NewCredentials()))
 	require.NotNil(t, err)
-	client := NewUserSeriviceClient(cc)
+	client := NewUserServiceClient(cc)
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
 	defer cancel()
 	resp, err := client.GetById(ctx, &GetByIdRequest{
@@ -56,7 +56,7 @@ func (s *FailoverSuite) TestClient() {
 	s.T().Log(resp.User)
 }
 
-func (s *FailoverSuite) startServer(addr string, svc UserSeriviceServer) {
+func (s *FailoverSuite) startServer(addr string, svc UserServiceServer) {
 	l, err := net.Listen("tcp", addr)
 	require.NoError(s.T(), err)
 	//endpoint 以服务为维度,一个服务一个Manger
@@ -99,7 +99,7 @@ func (s *FailoverSuite) startServer(addr string, svc UserSeriviceServer) {
 	}()
 
 	server := grpc.NewServer()
-	RegisterUserSeriviceServer(server, svc)
+	RegisterUserServiceServer(server, svc)
 	err = server.Serve(l)
 	s.T().Log(l)
 	//正常退出 enpoints
@@ -125,7 +125,7 @@ func (s *FailoverSuite) TestRoundRobinClient() {
 		//在这里使用负载均衡
 		grpc.WithDefaultServiceConfig(svgCfg),
 		grpc.WithTransportCredentials(insecure.NewCredentials()))
-	client := NewUserSeriviceClient(cc)
+	client := NewUserServiceClient(cc)
 	for i := 0; i < 10; i++ {
 		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 		resp, err := client.GetById(ctx, &GetByIdRequest{Id: 123})
