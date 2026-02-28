@@ -18,7 +18,7 @@ import (
 	"time"
 )
 
-// 确保Userhandler实现了handler的接口
+// 确保UserHandler实现了handler的接口
 // var _ handler = &UserHandler{}      //初始化了一个对象
 var _ handler = (*UserHandler)(nil) //没有初始化任何对象  更优雅
 

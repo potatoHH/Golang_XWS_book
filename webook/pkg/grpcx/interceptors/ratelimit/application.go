@@ -1,9 +1,11 @@
 package ratelimit
 
 import (
+	grpc2 "Book_Exp/grpc"
 	"Book_Exp/webook/pkg/logger"
 	"Book_Exp/webook/pkg/ratelimit"
 	"context"
+	"fmt"
 	"strings"
 
 	"google.golang.org/grpc"
@@ -78,5 +80,25 @@ func (b *InterceptorBuilder) BuilderServerInterceptorService() grpc.UnaryServerI
 			}
 		}
 		return handler(ctx, req)
+	}
+}
+
+//灵活的业务限流
+
+func (b *InterceptorBuilder) BuilderServerInterceptorBiz() grpc.UnaryServerInterceptor {
+	return func(ctx context.Context, req any, info *grpc.UnaryServerInfo,
+		handler grpc.UnaryHandler) (resp any, err error) {
+		if getById, ok := req.(*grpc2.GetByIdRequest); ok {
+			key := fmt.Sprintf("limiter:user:get_by_id_:%d", getById.Id)
+			ok, err := b.limiter.Limit(ctx, key)
+			if err != nil {
+				return nil, status.Errorf(codes.ResourceExhausted, "触发限流")
+			}
+			if ok {
+				return nil, status.Errorf(codes.ResourceExhausted, "触发限流")
+			}
+		}
+		return handler(ctx, req)
+
 	}
 }
