@@ -16,10 +16,51 @@ import (
 	"google.golang.org/grpc/metadata"
 )
 
+//链路控制
+
 type InterceptorBuilder struct {
 	propagator propagation.TextMapPropagator
 	tracer     trace.Tracer
 	interceptors.Builder
+}
+
+func (b *InterceptorBuilder) BuildClient() grpc.UnaryClientInterceptor {
+	return func(ctx context.Context, method string, req, reply any, cc *grpc.ClientConn,
+		invoker grpc.UnaryInvoker, opts ...grpc.CallOption) (err error) {
+		//inject
+		//要把和trace有关的链路元素据, 传递到服务端
+		propagator := b.propagator
+		if propagator == nil {
+			//这个是全局的
+			propagator = otel.GetTextMapPropagator()
+		}
+		tracer := b.tracer
+		if tracer == nil {
+			tracer = otel.GetTracerProvider().Tracer("grpcx")
+		}
+		attrs := []attribute.KeyValue{
+			semconv.RPCSystemKey.String("grpc"),
+			attribute.Key("rpc.grpc.kind").String("unary"),
+			attribute.Key("rpc.component").String("client"),
+		}
+		ctx, span := tracer.Start(ctx, method, trace.WithAttributes(attrs...))
+		defer span.End()
+		defer func() {
+			if err != nil {
+				span.RecordError(err)
+				if e := errors.FromError(err); e != nil {
+					span.SetAttributes(semconv.RPCGRPCStatusCodeKey.Int64(int64(e.Code)))
+				}
+				span.SetStatus(codes.Error, err.Error())
+			} else {
+				span.SetStatus(codes.Ok, "OK")
+			}
+		}()
+		ctx = inject(ctx, propagator)
+		err = invoker(ctx, method, req, reply, cc, opts...)
+		return
+	}
+
 }
 
 func (b *InterceptorBuilder) BuildServer() grpc.UnaryServerInterceptor {
@@ -67,6 +108,19 @@ func (b *InterceptorBuilder) BuildServer() grpc.UnaryServerInterceptor {
 	}
 
 }
+
+func inject(ctx context.Context, propagators propagation.TextMapPropagator) context.Context {
+	//先看ctx里面有没有原始数据
+	md, ok := metadata.FromOutgoingContext(ctx)
+	if !ok {
+		md = metadata.New(map[string]string{})
+	}
+	//把元素据放回去 ctx, 具体什么格式由propagator
+	propagators.Inject(ctx, GrpcHeaderCarrier(md))
+	//再次封装 后续可以在invoker里面继续拿到metadata
+	return metadata.NewOutgoingContext(ctx, md)
+}
+
 func extract(ctx context.Context, p propagation.TextMapPropagator) context.Context {
 	//这里拿到客户端过来的链路数据
 	md, ok := metadata.FromIncomingContext(ctx)

@@ -17,7 +17,7 @@ func TestSyncProducer(t *testing.T) {
 	producer, err := sarama.NewSyncProducer(adds, cfg)
 	assert.NoError(t, err)
 	p, offest, err := producer.SendMessage(&sarama.ProducerMessage{
-		Topic: "test",
+		Topic: "test_group",
 		Key:   sarama.StringEncoder("key"),
 		Value: sarama.StringEncoder("同步消息"),
 		//会在produce 和 consume 中之间传递
@@ -32,6 +32,7 @@ func TestSyncProducer(t *testing.T) {
 	})
 	assert.NoError(t, err)
 	fmt.Println(p, offest)
+
 }
 
 func TestAsyncProducer(t *testing.T) {
