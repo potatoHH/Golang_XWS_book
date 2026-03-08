@@ -7,6 +7,6 @@ import (
 //使用gorm的建表功能
 
 func InitTable(db *gorm.DB) error {
-	return db.AutoMigrate(&UserLikeBiz{}, &Interactive{}, &Collection{}, &UserCollectionBiz{}) // 自动迁移
+	return db.AutoMigrate(&User{}, &UserLikeBiz{}, &Interactive{}, &Collection{}, &UserCollectionBiz{}) // 自动迁移
 
 }

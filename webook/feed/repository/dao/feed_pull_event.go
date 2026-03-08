@@ -7,13 +7,14 @@ import (
 )
 
 type FeedPullEventDAO interface {
-	CreatePullEvents(ctx context.Context, events []FeedPullEvent) error
+	CreatePullEvents(ctx context.Context, events FeedPullEvent) error
 	FindPullEventList(ctx context.Context, uids []int64, timestamp, limit int64) ([]FeedPullEvent, error)
 	FindPullEventListWithTyp(ctx context.Context, typ string, uids []int64, timestamp, limit int64) ([]FeedPullEvent, error)
 }
 
 type FeedPullEvent struct {
-	Id      int64  `gorm:"primaryKey,autoIncrement"`
+	Id int64 `gorm:"primaryKey,autoIncrement"`
+	//发件人
 	UID     int64  `gorm:"column:uid;type:int(11);not null;"`
 	Type    string `gorm:"column:type;type:varchar(255);comment:类型"`
 	Content string `gorm:"column:content;type:text;"`
@@ -31,7 +32,7 @@ func NewFeedPullEventDAO(db *gorm.DB) FeedPullEventDAO {
 	}
 
 }
-func (f *feedPullEventDAO) CreatePullEvents(ctx context.Context, events []FeedPullEvent) error {
+func (f *feedPullEventDAO) CreatePullEvents(ctx context.Context, events FeedPullEvent) error {
 	return f.db.WithContext(ctx).Create(&events).Error
 
 }

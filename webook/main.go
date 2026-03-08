@@ -40,7 +40,10 @@ func main() {
 func initViperV1() {
 	viper.SetConfigName("dev")
 	viper.SetConfigType("yaml")
+	// 支持多个路径，兼容不同的运行目录
 	viper.AddConfigPath("./config")
+	viper.AddConfigPath("./webook/config")
+	viper.AddConfigPath("../config")
 	err := viper.ReadInConfig()
 	if err != nil {
 		panic(err)
