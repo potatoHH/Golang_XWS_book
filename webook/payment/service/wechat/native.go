@@ -6,11 +6,16 @@ import (
 	"Book_Exp/webook/payment/repository"
 	"Book_Exp/webook/pkg/logger"
 	"context"
+	"errors"
+	"fmt"
 	"time"
 
 	"github.com/wechatpay-apiv3/wechatpay-go/core"
 	"github.com/wechatpay-apiv3/wechatpay-go/services/partnerpayments/native"
+	"github.com/wechatpay-apiv3/wechatpay-go/services/payments"
 )
+
+var errUnknownTransactionState = errors.New("未知的微信事务状态")
 
 type NativePaymentService struct {
 	svc                  *native.NativeApiService
@@ -75,4 +80,45 @@ func (n *NativePaymentService) Prepay(ctx context.Context, pmt domain.Payment) (
 		return "", err
 	}
 	return *resp.CodeUrl, err
+}
+
+func (n *NativePaymentService) updateByTxn(ctx context.Context, txn *payments.Transaction) error {
+	status, ok := n.nativeCBTypeToStatus[*txn.TradeState]
+	if !ok {
+		return fmt.Errorf("%w, %s", errUnknownTransactionState, *txn.TradeState)
+	}
+	pmt := domain.Payment{
+		BizTradeNO: *txn.OutTradeNo,
+		TxnID:      *txn.TransactionId,
+		Status:     status,
+	}
+	err := n.repo.UpdatePayment(ctx, pmt)
+	if err != nil {
+		// 这里有一个小问题，就是如果超时了的话，你都不知道更新成功了没
+		return err
+	}
+	// 就是处于结束状态
+	err1 := n.producer.ProducePaymentEvent(ctx, events.PaymentEvent{
+		BizTradeNO: pmt.BizTradeNO,
+		Status:     pmt.Status.AsUint8(),
+	})
+	if err1 != nil {
+		// 要做好监控和告警
+		n.l.Error("发送支付事件失败", logger.Error(err),
+			logger.String("biz_trade_no", pmt.BizTradeNO))
+	}
+	// 虽然发送事件失败，但是数据库记录了，所以可以返回 Nil
+	return nil
+}
+
+func (n *NativePaymentService) FindExpiredPayment(ctx context.Context, offset, limit int, t time.Time) ([]domain.Payment, error) {
+	return n.repo.FindExpiredPayment(ctx, offset, limit, t)
+}
+
+func (n *NativePaymentService) GetPayment(ctx context.Context, bizTradeId string) (domain.Payment, error) {
+	return n.repo.GetPayment(ctx, bizTradeId)
+}
+
+func (n *NativePaymentService) HandleCallback(ctx context.Context, txn *payments.Transaction) error {
+	return n.updateByTxn(ctx, txn)
 }
