@@ -1,7 +1,6 @@
 package dao
 
 import (
-	"gitee.com/geekbang/basic-go/webook/account/domain"
 	"gorm.io/gorm"
 	"time"
 )

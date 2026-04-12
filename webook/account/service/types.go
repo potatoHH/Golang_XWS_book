@@ -1,8 +1,8 @@
 package service
 
 import (
+	"Book_Exp/webook/account/domain"
 	"context"
-	"gitee.com/geekbang/basic-go/webook/account/domain"
 )
 
 type AccountService interface {

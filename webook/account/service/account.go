@@ -2,8 +2,6 @@ package service
 
 import (
 	"context"
-	"gitee.com/geekbang/basic-go/webook/account/domain"
-	"gitee.com/geekbang/basic-go/webook/account/repository"
 )
 
 type accountService struct {
